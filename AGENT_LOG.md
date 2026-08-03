@@ -112,4 +112,25 @@
 - 已创建 `explorer-agent/MANUAL_CHECKS.md`（6 项手动检查清单 + 命令 + 预期）
 - **提醒用户执行手动检查**
 
+### [人] 用户反馈：假设太多
+- 指出我在实现中做了太多未经确认的假设（可选实现方式、需用户填写的部分）
+- 要求逐个确认 + 写结构详解 + 写 SDD 实战教程 + 写使用总结
+
+### [AI-主] 逐个确认假设（17 项）
+- A 类（内容物）：A1 rules 加 JSON 示例✓ / A2 system_prompt 极简✓ / A3 write_file 限制策略目录✓ / A4 goal 加具体路径✓
+- B 类（参数）：B1 max_steps 30 / B2 fetch_url 20s / B3 run_shell 300s / B4 max_tokens 4096 / B5 temperature 0.3 —— 全部同意
+- C 类（抉择）：C1 无 tool_calls 即停 / C2 write_file 沙箱 / C3 read_file 限制 / C4 shell=True / C5 LLM 重试 / C6 不加 compact / C7 trace_id 微秒 / C8 工厂特判不改 —— 全部同意
+
+### [AI-sub-实现] 精修改动（commit 4531b41）
+- 10 文件改动，21 测试通过（新增 test_write_inside_strategies_allow）
+- guardrail 加 scope 路径沙箱（inside/outside_strategies/project）
+- llm/client 加 max_tokens/temperature/重试
+- rules/AGENTS.md 加策略 JSON 示例
+- main.py goal 加具体策略路径
+
+### [AI-主] 写三份文档（commit c017270）
+- `AGENT_STRUCTURE.md`（项目根）— Agent 结构详解，逐文件介绍（作用/格式/怎么改），含配置/修改/使用指南
+- `SDD_TUTORIAL.md`（项目根）— SDD 实现全过程实战教程，基于 log+task 报告，含 Task 9 修复循环详解、关键教训、复现步骤
+- `explorer-agent/MANUAL_CHECKS.md` — 6 项手动验收清单
+
 ---
