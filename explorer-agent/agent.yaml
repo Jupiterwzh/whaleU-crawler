@@ -1,0 +1,39 @@
+agent:
+  name: "explorer-agent"
+  model: "${LLM_MODEL}"
+  max_steps: 30
+
+llm:
+  base_url: "${LLM_BASE_URL}"
+  api_key: "${LLM_API_KEY}"
+
+rules:
+  - path: "./rules/AGENTS.md"
+
+tools:
+  builtin:
+    - name: "fetch_url"
+      module: "src.tools.web_tools"
+      factory: "make_web_tools"
+    - name: "read_file"
+      module: "src.tools.file_tools"
+      factory: "make_file_tools"
+    - name: "write_file"
+      module: "src.tools.file_tools"
+      factory: "make_file_tools"
+      require_approval: true
+    - name: "run_shell"
+      module: "src.tools.shell_tools"
+      factory: "make_shell_tools"
+      require_approval: true
+
+guardrail:
+  policy: "./guardrails/policy.yaml"
+
+tracer:
+  output: "./traces/"
+
+paths:
+  strategies_dir: "${STRATEGIES_DIR}"
+  crawler_script: "${CRAWLER_SCRIPT}"
+  nju_browser: "${NJU_BROWSER_DIR}"
