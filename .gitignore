@@ -1,0 +1,20 @@
+# 环境与密钥
+.env
+*.env
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Agent 运行产物
+explorer-agent/traces/
+
+# crawler 有自己的 .git，排除避免嵌套
+crawler/
+
+# 旧 src 暂留
+src/
+
+# 临时
+*.bak
