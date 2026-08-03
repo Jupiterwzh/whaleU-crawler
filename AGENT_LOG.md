@@ -134,3 +134,45 @@
 - `explorer-agent/MANUAL_CHECKS.md` — 6 项手动验收清单
 
 ---
+
+## 2026-08-04 会话三：仓库合并 + .env 修复 + NJU 浏览器服务入库
+
+### [人] 指令
+- 补全 crawler 跟踪并合并到根仓库（两个 .git → 一个）
+- 检查 .env 是否有效（禁止 echo key）
+- 解释"<你的 NJU 浏览器服务目录>"含义
+- 将 skills-nju-browser 复制到项目内，修改 .env 路径
+- 检查另外两个路径（STRATEGIES_DIR / CRAWLER_SCRIPT）是否有误
+
+### [AI] .env 修复
+- **问题 1**：`LLM_MODEL=deepseek/deepseek-v4-flash(free)` 未加引号，shell `source` 时 `(free)` 被当子 shell 解析，导致第 4 行起全部加载失败（STRATEGIES_DIR 等全空）
+- **问题 2**：`NJU_BROWSER_DIR=<你的 NJU 浏览器服务目录>` 尖括号 `<` 被 shell 当重定向解析，语法错误
+- **修复**：给所有值加双引号；NJU_BROWSER_DIR 替换为真实路径
+- **结果**：6 个变量全部加载成功（LLM_API_KEY / LLM_BASE_URL / LLM_MODEL / STRATEGIES_DIR / CRAWLER_SCRIPT / NJU_BROWSER_DIR）
+- .env.example 模板同步修复（所有值加引号）
+
+### [AI] 仓库合并（commit c3e2e94）
+- crawler/.git 移至 `/tmp/opencode/crawler-git-backup`（保留历史）
+- 根 .gitignore 删除 `crawler/` 排除规则
+- crawler/ 32 个文件加入根仓库（crawler/.gitignore 继续生效，排除 node_modules/chrome/*.jsonl）
+- 合并后单一仓库跟踪 explorer-agent/ + crawler/ + nju-browser/
+
+### [AI] NJU 浏览器服务入库（commit 待提交）
+- 将 `/mnt/c/Users/wangzhiheng/Desktop/skills-nju-browser`（74MB）复制到项目内 `nju-browser/`
+- 创建 `nju-browser/.gitignore`：排除 node_modules/（27MB）、chrome/（47MB）、*.log
+- 入库 11 个源文件（JS + package.json + SKILL.md + .nju-qr.png + .nju-start.bat）
+- .env 和 .env.example 的 NJU_BROWSER_DIR 更新为 `/home/wangzhiheng/whaleU-crawler/nju-browser`
+- 验证：路径存在 ✓，nju-query.js 存在 ✓
+
+### [AI] 路径检查结果
+- STRATEGIES_DIR → 目录存在 ✓
+- CRAWLER_SCRIPT → 文件存在 ✓
+- NJU_BROWSER_DIR → 目录存在 ✓（更新后）
+
+### [AI] 解释：为什么 NJU 浏览器服务不是"skill"
+- opencode 的 skill 是**行为指令**（markdown 文件，如 brainstorming.md），指导 AI 如何思考和行动
+- NJU 浏览器服务是**运行时程序**（Node.js + Puppeteer + Chrome 二进制），需要安装依赖、启动进程
+- Agent 通过 `run_shell` 调用它（`node $NJU_BROWSER_DIR/nju-query.js "关键词"`），是工具/服务，不是行为指令
+- 因此放在项目内作为运行时依赖，而非 skills/ 目录
+
+---

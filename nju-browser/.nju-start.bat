@@ -1,0 +1,1 @@
+@start /B node "C:\Users\wangzhiheng\AppData\Roaming\CherryStudio\Data\Skills\skills-nju-browser\nju-browser-server.js" --port=4100
