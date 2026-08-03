@@ -47,3 +47,19 @@ def test_write_file(tmp_path):
     out = tmp_path / "out.txt"
     reg.call("write_file", {"path": str(out), "content": "data"})
     assert out.read_text() == "data"
+
+from unittest.mock import patch, MagicMock
+from src.tools.web_tools import make_web_tools
+
+def test_fetch_url():
+    tools = make_web_tools()
+    reg = ToolRegistry()
+    for t in tools:
+        reg.register(t)
+    fake = MagicMock()
+    fake.status_code = 200
+    fake.text = "<html>hi</html>"
+    fake.raise_for_status = MagicMock()
+    with patch("src.tools.web_tools.httpx.get", return_value=fake):
+        result = reg.call("fetch_url", {"url": "https://x"})
+    assert result == "<html>hi</html>"
