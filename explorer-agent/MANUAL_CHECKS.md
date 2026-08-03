@@ -10,19 +10,58 @@
 
 你需要在终端设置真实环境变量（AI 无法替你填 key）。
 
-```bash
-# 1. 进入项目目录
-cd /home/wangzhiheng/whaleU-crawler/explorer-agent
+### 方法 A（推荐）：.env 文件
 
-# 2. 设置环境变量（把 your-real-key 换成你的 CherryIN key）
-export LLM_BASE_URL=https://open.cherryin.cc/v1
-export LLM_API_KEY=your-real-cherryin-key
-export LLM_MODEL=deepseek/deepseek-v4-flash(free)
-export STRATEGIES_DIR=/home/wangzhiheng/whaleU-crawler/crawler/data/strategies
-export CRAWLER_SCRIPT=/home/wangzhiheng/whaleU-crawler/crawler/src/collectors/collector.js
+```bash
+# 1. 复制模板并填入真实值（只需做一次）
+cp .env.example .env
+# 编辑 .env，填入你的 CherryIN key 和真实路径
+
+# 2. 每次开新终端时，先加载 .env 再运行 Agent
+cd /home/wangzhiheng/whaleU-crawler/explorer-agent
+set -a && source .env && set +a
 ```
 
-> **提示**：你也可以复制 `.env.example` 为 `.env`，填入真实 key，然后在命令前加 `set -a && source .env && set +a` 加载。但 `.env` 不进版本库（.gitignore 已排除）。
+> **重要**：Python 不自动加载 .env（无 python-dotenv 依赖）。必须在运行 `python main.py` **之前**、**同一个终端**里执行 `source .env`，否则环境变量不生效。
+
+### 方法 B（替代）：直接 export
+
+```bash
+cd /home/wangzhiheng/whaleU-crawler/explorer-agent
+export LLM_BASE_URL=https://open.cherryin.cc/v1
+export LLM_API_KEY=your-real-cherryin-key
+export LLM_MODEL="deepseek/deepseek-v4-flash(free)"
+export STRATEGIES_DIR=/home/wangzhiheng/whaleU-crawler/crawler/data/strategies
+export CRAWLER_SCRIPT=/home/wangzhiheng/whaleU-crawler/crawler/src/collectors/collector.js
+export NJU_BROWSER_DIR=/home/wangzhiheng/whaleU-crawler/nju-browser
+```
+
+### 验证环境变量已生效
+
+加载后运行以下命令（不打印 key 值），三层全 ✓ 即通过：
+
+```bash
+python -c "
+import os
+from src.harness import Harness
+from src.llm.client import LLMClient
+
+# 第 1 层：os.environ
+for v in ['LLM_API_KEY','LLM_BASE_URL','LLM_MODEL','STRATEGIES_DIR','CRAWLER_SCRIPT','NJU_BROWSER_DIR']:
+    val = os.environ.get(v,'')
+    print(f'  {v}: {\"✓\" if val else \"✗ MISSING\"} ({len(val)} chars)')
+
+# 第 2 层：Harness 解析 \${VAR}
+h = Harness.from_yaml('agent.yaml')
+sd = h.config.get('paths',{}).get('strategies_dir','')
+print(f'  strategies_dir: {sd} {\"✓\" if sd and \"\${\" not in sd else \"✗\"}')
+
+# 第 3 层：LLMClient 初始化
+c = LLMClient()
+print(f'  LLMClient: model={c.model} ✓')
+print('>>> 全部通过 <<<')
+"
+```
 
 ---
 

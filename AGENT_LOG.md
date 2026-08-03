@@ -176,3 +176,37 @@
 - 因此放在项目内作为运行时依赖，而非 skills/ 目录
 
 ---
+
+## 2026-08-04 会话四：AGENTS.md 规则文件 + 环境变量验证
+
+### [人] 指令
+- 发现 AI 遗忘多项规则（禁止硬编码、不假设而是询问、随时完善文档、强制 brainstorm 等）
+- 要求思考如何解决遗忘问题
+- 批准 AGENTS.md 设计（全面覆盖 18 条规则），要求先写 AGENTS.md 再睡
+- 要求整理进度复盘，明天早上看
+
+### [AI] brainstorm：诊断遗忘根因
+- 用 brainstorming skill 系统思考
+- **根因**：项目根目录无 AGENTS.md（opencode 每轮自动读取的持久指令文件），规则散落在会话摘要/系统提示/skills 里，没有必定加载的
+- 现有三个 AGENTS.md 各管各的：crawler/AGENTS.md（crawler 文档）、explorer-agent/rules/AGENTS.md（Python Agent 行为规则）、根目录（空缺）
+
+### [AI+人] 设计：AGENTS.md 内容
+- 用户选择"全面覆盖"，回顾整个会话提取 6 类 18 条规则
+- 用户修改 5 条：A3 改为"较大改动后提交"、A4 改为"注释恰到好处"、A5 改为"回复详略得当"、B6 加"后续新增文档在此补充"、B8 删除
+- 用户批准设计
+
+### [AI] 实现 AGENTS.md（commit 待提交）
+- 在项目根创建 `AGENTS.md`，18 条规则分 6 类（A 工作纪律 / B 文档维护 / C Superpowers / D 安全 / E 代码约定 / F 项目特定）
+- opencode 每轮自动读取此文件，规则从此持久在上下文中
+
+### [AI] 环境变量三层验证
+- 发现 Python 不自动加载 .env（无 python-dotenv 依赖），必须同终端 source
+- 代码两层用 env var：LLMClient 直接读 os.environ / Harness._resolve_env 解析 `${VAR}`
+- 三层验证全通过：① os.environ 6 变量可读 ✓ ② Harness ${VAR} 解析成功 ✓ ③ LLMClient 初始化成功 ✓
+
+### [AI] 更新 MANUAL_CHECKS.md
+- .env 方法设为主方法（原 export 为主、.env 为提示）
+- 加"必须同终端 source"警告
+- 附三层验证命令
+
+---
