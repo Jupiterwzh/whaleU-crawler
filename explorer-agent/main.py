@@ -1,0 +1,28 @@
+# main.py
+"""explorer-agent 入口。两种模式：--explore-only（爬虫委托）/ 直接目标（Agent 编排）。"""
+import sys
+
+from src.harness import Harness
+from src.agent_loop import AgentLoop
+from src.llm.client import LLMClient
+
+
+def main():
+    args = sys.argv[1:]
+    explore_only = "--explore-only" in args
+    if explore_only:
+        idx = args.index("--explore-only")
+        url = args[idx + 1] if idx + 1 < len(args) else ""
+        goal = f"探索 {url} 的通知公告入口，生成爬取策略 JSON 写入策略目录。不要调用爬虫执行爬取。"
+    else:
+        goal = " ".join(args) or input("🎯 任务: ")
+
+    harness = Harness.from_yaml("agent.yaml")
+    llm = LLMClient()
+    loop = AgentLoop(harness, llm)
+    result = loop.run(goal)
+    print(f"\n✅ 结果:\n{result}")
+
+
+if __name__ == "__main__":
+    main()
