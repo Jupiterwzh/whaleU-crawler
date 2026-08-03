@@ -65,3 +65,23 @@
 - [ ] 对 cs.nju.edu.cn 跑验收
 
 ---
+
+## 2026-08-03 会话二：SDD 执行（Task 0-12）
+
+### [AI-主] SDD 前置设置
+- git init 根目录 + .gitignore（排除 crawler/、src/、.env、__pycache__）
+- 预装 pip 依赖（openai/pyyaml/httpx/pytest）
+- 建 SDD 工作区 .superpowers/sdd/PLAN/ + 进度账本 progress.md
+- 预审计划：Task 间接口一致，无冲突
+
+### Task 0: 项目初始化 — 完成
+- [AI-主] 直接做脚手架（纯配置文件，无逻辑无测试，避免 subagent 卡权限）
+- 产出：requirements.txt、.env.example、.gitignore、__init__.py×4、conftest.py
+- 提交 430ad83
+
+### Task 1: LLM 客户端 — 完成
+- [AI-sub-实现] 写测试→实现 src/llm/client.py→3 测试通过→提交 dd30420；修正 .gitignore src/→/src/（避免误忽略 explorer-agent/src/）
+- [AI-sub-审查] 规格✓ 质量✓，2 Minor（源自 brief，不阻断）：缺 key 测试用裸 try/except 而非 pytest.raises；文本测试隐式依赖 conftest mock_env
+- [AI-主] 通过，Minor 记入账本延迟处理
+
+---
