@@ -63,3 +63,13 @@ def test_fetch_url():
     with patch("src.tools.web_tools.httpx.get", return_value=fake):
         result = reg.call("fetch_url", {"url": "https://x"})
     assert result == "<html>hi</html>"
+
+from src.tools.shell_tools import make_shell_tools
+
+def test_run_shell():
+    tools = make_shell_tools()
+    reg = ToolRegistry()
+    for t in tools:
+        reg.register(t)
+    result = reg.call("run_shell", {"cmd": "echo hello"})
+    assert "hello" in result
