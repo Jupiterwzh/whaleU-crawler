@@ -1,5 +1,6 @@
 # main.py
 """explorer-agent 入口。两种模式：--explore-only（爬虫委托）/ 直接目标（Agent 编排）。"""
+import os
 import sys
 
 from src.harness import Harness
@@ -13,7 +14,10 @@ def main():
     if explore_only:
         idx = args.index("--explore-only")
         url = args[idx + 1] if idx + 1 < len(args) else ""
-        goal = f"探索 {url} 的通知公告入口，生成爬取策略 JSON 写入策略目录。不要调用爬虫执行爬取。"
+        strategies_dir = os.environ.get("STRATEGIES_DIR", "")
+        domain = url.split("//")[1].split("/")[0] if "//" in url else url
+        strategy_path = f"{strategies_dir}/{domain}.json" if strategies_dir else "策略目录"
+        goal = f"探索 {url} 的通知公告入口，生成爬取策略 JSON，写入 {strategy_path}。不要调用爬虫执行爬取。"
     else:
         goal = " ".join(args) or input("🎯 任务: ")
 

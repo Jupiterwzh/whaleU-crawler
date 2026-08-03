@@ -4,7 +4,7 @@ import subprocess
 from .registry import Tool
 
 
-def _run_shell(cmd: str, timeout: float = 60.0) -> str:
+def _run_shell(cmd: str, timeout: float = 300.0) -> str:
     proc = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=timeout)
     out = proc.stdout
     if proc.stderr:

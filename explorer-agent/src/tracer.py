@@ -9,7 +9,7 @@ class Tracer:
     def __init__(self, output_dir: str):
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
-        self.trace_id = f"trace-{int(time.time())}"
+        self.trace_id = f"trace-{int(time.time()*1000)}"
         self._records: list[dict] = []
         self._start = time.time()
 

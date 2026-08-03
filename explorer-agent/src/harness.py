@@ -59,7 +59,14 @@ class Harness:
                     reg.register(tool)
 
         # 门控
-        guardrail = Guardrail.from_yaml(str(base / cfg["guardrail"]["policy"]))
+        project_root = str(base.parent)
+        guardrail = Guardrail.from_yaml(
+            str(base / cfg["guardrail"]["policy"]),
+            context={
+                "strategies_dir": paths.get("strategies_dir", ""),
+                "project_root": project_root,
+            },
+        )
 
         # 轨迹
         tracer = Tracer(output_dir=str(base / cfg["tracer"]["output"]))

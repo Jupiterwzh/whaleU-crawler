@@ -4,7 +4,7 @@ import httpx
 from .registry import Tool
 
 
-def _fetch_url(url: str, timeout: float = 15.0) -> str:
+def _fetch_url(url: str, timeout: float = 20.0) -> str:
     resp = httpx.get(url, timeout=timeout, follow_redirects=True,
                      headers={"User-Agent": "Mozilla/5.0 (compatible; explorer-agent/0.1)"})
     resp.raise_for_status()

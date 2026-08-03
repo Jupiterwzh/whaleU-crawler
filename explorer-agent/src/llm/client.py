@@ -16,10 +16,17 @@ class LLMClient:
 
     def chat(self, messages, tools=None):
         """返回 {"text": str, "tool_calls": list | None}。"""
-        kwargs = {"model": self.model, "messages": messages}
+        kwargs = {"model": self.model, "messages": messages, "max_tokens": 4096, "temperature": 0.3}
         if tools:
             kwargs["tools"] = tools
-        resp = self._client.chat.completions.create(**kwargs)
+        for attempt in range(2):
+            try:
+                resp = self._client.chat.completions.create(**kwargs)
+                break
+            except Exception as e:
+                if attempt == 0:
+                    continue
+                raise
         msg = resp.choices[0].message
         tool_calls = None
         if msg.tool_calls:
