@@ -1,0 +1,425 @@
+{
+  "meta": {
+    "domain": "jw.nju.edu.cn",
+    "siteName": "本科生院",
+    "strategyVersion": 1,
+    "created": "2026-08-02T04:20:19.121Z",
+    "updated": "2026-08-02T04:20:19.121Z"
+  },
+  "entries": [
+    {
+      "name": "列表页",
+      "url": "https://jw.nju.edu.cn/js/list.htm?key=",
+      "type": "news_title",
+      "paginationType": "listN",
+      "paginationHint": "https://jw.nju.edu.cn/js/list{page}.htm?key=",
+      "estimatedCount": 0,
+      "description": "从HTML中发现的list链接"
+    },
+    {
+      "name": "列表页",
+      "url": "http://jw.nju.edu.cn/qxnjxxl/list.htm",
+      "type": "news_title",
+      "paginationType": "listN",
+      "paginationHint": "http://jw.nju.edu.cn/qxnjxxl/list{page}.htm",
+      "estimatedCount": 0,
+      "description": "从HTML中发现的list链接"
+    },
+    {
+      "name": "列表页",
+      "url": "https://jw.nju.edu.cn/jgjj/list.htm",
+      "type": "news_title",
+      "paginationType": "listN",
+      "paginationHint": "https://jw.nju.edu.cn/jgjj/list{page}.htm",
+      "estimatedCount": 0,
+      "description": "从HTML中发现的list链接"
+    },
+    {
+      "name": "列表页 65047",
+      "url": "https://jw.nju.edu.cn/65047/list.htm",
+      "type": "news_title",
+      "paginationType": "listN",
+      "paginationHint": "https://jw.nju.edu.cn/65047/list{page}.htm",
+      "estimatedCount": 0,
+      "description": "从HTML中发现的list链接"
+    },
+    {
+      "name": "列表页 65048",
+      "url": "https://jw.nju.edu.cn/65048/list.htm",
+      "type": "news_title",
+      "paginationType": "listN",
+      "paginationHint": "https://jw.nju.edu.cn/65048/list{page}.htm",
+      "estimatedCount": 0,
+      "description": "从HTML中发现的list链接"
+    },
+    {
+      "name": "列表页 24738",
+      "url": "https://jw.nju.edu.cn/24738/list.htm",
+      "type": "news_title",
+      "paginationType": "listN",
+      "paginationHint": "https://jw.nju.edu.cn/24738/list{page}.htm",
+      "estimatedCount": 0,
+      "description": "从HTML中发现的list链接"
+    },
+    {
+      "name": "列表页 24751",
+      "url": "http://jw.nju.edu.cn/24751/list.htm",
+      "type": "news_title",
+      "paginationType": "listN",
+      "paginationHint": "http://jw.nju.edu.cn/24751/list{page}.htm",
+      "estimatedCount": 0,
+      "description": "从HTML中发现的list链接"
+    },
+    {
+      "name": "列表页 24679",
+      "url": "https://jw.nju.edu.cn/24679/list.htm",
+      "type": "news_title",
+      "paginationType": "listN",
+      "paginationHint": "https://jw.nju.edu.cn/24679/list{page}.htm",
+      "estimatedCount": 0,
+      "description": "从HTML中发现的list链接"
+    },
+    {
+      "name": "列表页 24777",
+      "url": "https://jw.nju.edu.cn/24777/list.htm",
+      "type": "news_title",
+      "paginationType": "listN",
+      "paginationHint": "https://jw.nju.edu.cn/24777/list{page}.htm",
+      "estimatedCount": 0,
+      "description": "从HTML中发现的list链接"
+    },
+    {
+      "name": "列表页 24779",
+      "url": "https://jw.nju.edu.cn/24779/list.htm",
+      "type": "news_title",
+      "paginationType": "listN",
+      "paginationHint": "https://jw.nju.edu.cn/24779/list{page}.htm",
+      "estimatedCount": 0,
+      "description": "从HTML中发现的list链接"
+    },
+    {
+      "name": "列表页 24780",
+      "url": "https://jw.nju.edu.cn/24780/list.htm",
+      "type": "news_title",
+      "paginationType": "listN",
+      "paginationHint": "https://jw.nju.edu.cn/24780/list{page}.htm",
+      "estimatedCount": 0,
+      "description": "从HTML中发现的list链接"
+    },
+    {
+      "name": "列表页 24781",
+      "url": "https://jw.nju.edu.cn/24781/list.htm",
+      "type": "news_title",
+      "paginationType": "listN",
+      "paginationHint": "https://jw.nju.edu.cn/24781/list{page}.htm",
+      "estimatedCount": 0,
+      "description": "从HTML中发现的list链接"
+    },
+    {
+      "name": "列表页 24680",
+      "url": "https://jw.nju.edu.cn/24680/list.htm",
+      "type": "news_title",
+      "paginationType": "listN",
+      "paginationHint": "https://jw.nju.edu.cn/24680/list{page}.htm",
+      "estimatedCount": 0,
+      "description": "从HTML中发现的list链接"
+    },
+    {
+      "name": "列表页 24787",
+      "url": "https://jw.nju.edu.cn/24787/list.htm",
+      "type": "news_title",
+      "paginationType": "listN",
+      "paginationHint": "https://jw.nju.edu.cn/24787/list{page}.htm",
+      "estimatedCount": 0,
+      "description": "从HTML中发现的list链接"
+    },
+    {
+      "name": "列表页 24789",
+      "url": "https://jw.nju.edu.cn/24789/list.htm",
+      "type": "news_title",
+      "paginationType": "listN",
+      "paginationHint": "https://jw.nju.edu.cn/24789/list{page}.htm",
+      "estimatedCount": 0,
+      "description": "从HTML中发现的list链接"
+    },
+    {
+      "name": "列表页 24790",
+      "url": "https://jw.nju.edu.cn/24790/list.htm",
+      "type": "news_title",
+      "paginationType": "listN",
+      "paginationHint": "https://jw.nju.edu.cn/24790/list{page}.htm",
+      "estimatedCount": 0,
+      "description": "从HTML中发现的list链接"
+    },
+    {
+      "name": "列表页 24791",
+      "url": "https://jw.nju.edu.cn/24791/list.htm",
+      "type": "news_title",
+      "paginationType": "listN",
+      "paginationHint": "https://jw.nju.edu.cn/24791/list{page}.htm",
+      "estimatedCount": 0,
+      "description": "从HTML中发现的list链接"
+    },
+    {
+      "name": "列表页 24792",
+      "url": "https://jw.nju.edu.cn/24792/list.htm",
+      "type": "news_title",
+      "paginationType": "listN",
+      "paginationHint": "https://jw.nju.edu.cn/24792/list{page}.htm",
+      "estimatedCount": 0,
+      "description": "从HTML中发现的list链接"
+    },
+    {
+      "name": "列表页 24681",
+      "url": "https://jw.nju.edu.cn/24681/list.htm",
+      "type": "news_title",
+      "paginationType": "listN",
+      "paginationHint": "https://jw.nju.edu.cn/24681/list{page}.htm",
+      "estimatedCount": 0,
+      "description": "从HTML中发现的list链接"
+    },
+    {
+      "name": "列表页 24783",
+      "url": "https://jw.nju.edu.cn/24783/list.htm",
+      "type": "news_title",
+      "paginationType": "listN",
+      "paginationHint": "https://jw.nju.edu.cn/24783/list{page}.htm",
+      "estimatedCount": 0,
+      "description": "从HTML中发现的list链接"
+    },
+    {
+      "name": "列表页",
+      "url": "https://jw.nju.edu.cn/yqfkqjbkjxgzzl/list.htm",
+      "type": "news_title",
+      "paginationType": "listN",
+      "paginationHint": "https://jw.nju.edu.cn/yqfkqjbkjxgzzl/list{page}.htm",
+      "estimatedCount": 0,
+      "description": "从HTML中发现的list链接"
+    },
+    {
+      "name": "列表页 24682",
+      "url": "https://jw.nju.edu.cn/24682/list.htm",
+      "type": "news_title",
+      "paginationType": "listN",
+      "paginationHint": "https://jw.nju.edu.cn/24682/list{page}.htm",
+      "estimatedCount": 0,
+      "description": "从HTML中发现的list链接"
+    },
+    {
+      "name": "列表页 24794",
+      "url": "https://jw.nju.edu.cn/24794/list.htm",
+      "type": "news_title",
+      "paginationType": "listN",
+      "paginationHint": "https://jw.nju.edu.cn/24794/list{page}.htm",
+      "estimatedCount": 0,
+      "description": "从HTML中发现的list链接"
+    },
+    {
+      "name": "列表页",
+      "url": "https://jw.nju.edu.cn/fxpyfa/list.htm",
+      "type": "news_title",
+      "paginationType": "listN",
+      "paginationHint": "https://jw.nju.edu.cn/fxpyfa/list{page}.htm",
+      "estimatedCount": 0,
+      "description": "从HTML中发现的list链接"
+    },
+    {
+      "name": "列表页 24795",
+      "url": "https://jw.nju.edu.cn/24795/list.htm",
+      "type": "news_title",
+      "paginationType": "listN",
+      "paginationHint": "https://jw.nju.edu.cn/24795/list{page}.htm",
+      "estimatedCount": 0,
+      "description": "从HTML中发现的list链接"
+    },
+    {
+      "name": "列表页 24796",
+      "url": "https://jw.nju.edu.cn/24796/list.htm",
+      "type": "news_title",
+      "paginationType": "listN",
+      "paginationHint": "https://jw.nju.edu.cn/24796/list{page}.htm",
+      "estimatedCount": 0,
+      "description": "从HTML中发现的list链接"
+    },
+    {
+      "name": "列表页 24683",
+      "url": "https://jw.nju.edu.cn/24683/list.htm",
+      "type": "news_title",
+      "paginationType": "listN",
+      "paginationHint": "https://jw.nju.edu.cn/24683/list{page}.htm",
+      "estimatedCount": 0,
+      "description": "从HTML中发现的list链接"
+    },
+    {
+      "name": "列表页 24809",
+      "url": "https://jw.nju.edu.cn/24809/list.htm",
+      "type": "news_title",
+      "paginationType": "listN",
+      "paginationHint": "https://jw.nju.edu.cn/24809/list{page}.htm",
+      "estimatedCount": 0,
+      "description": "从HTML中发现的list链接"
+    },
+    {
+      "name": "列表页 24810",
+      "url": "https://jw.nju.edu.cn/24810/list.htm",
+      "type": "news_title",
+      "paginationType": "listN",
+      "paginationHint": "https://jw.nju.edu.cn/24810/list{page}.htm",
+      "estimatedCount": 0,
+      "description": "从HTML中发现的list链接"
+    },
+    {
+      "name": "列表页 24813",
+      "url": "https://jw.nju.edu.cn/24813/list.htm",
+      "type": "news_title",
+      "paginationType": "listN",
+      "paginationHint": "https://jw.nju.edu.cn/24813/list{page}.htm",
+      "estimatedCount": 0,
+      "description": "从HTML中发现的list链接"
+    },
+    {
+      "name": "列表页 24815",
+      "url": "https://jw.nju.edu.cn/24815/list.htm",
+      "type": "news_title",
+      "paginationType": "listN",
+      "paginationHint": "https://jw.nju.edu.cn/24815/list{page}.htm",
+      "estimatedCount": 0,
+      "description": "从HTML中发现的list链接"
+    },
+    {
+      "name": "列表页 24816",
+      "url": "https://jw.nju.edu.cn/24816/list.htm",
+      "type": "news_title",
+      "paginationType": "listN",
+      "paginationHint": "https://jw.nju.edu.cn/24816/list{page}.htm",
+      "estimatedCount": 0,
+      "description": "从HTML中发现的list链接"
+    },
+    {
+      "name": "列表页 24774",
+      "url": "https://jw.nju.edu.cn/24774/list.htm",
+      "type": "news_title",
+      "paginationType": "listN",
+      "paginationHint": "https://jw.nju.edu.cn/24774/list{page}.htm",
+      "estimatedCount": 0,
+      "description": "从HTML中发现的list链接"
+    },
+    {
+      "name": "列表页",
+      "url": "https://jw.nju.edu.cn/ggtz/list.htm",
+      "type": "news_title",
+      "paginationType": "listN",
+      "paginationHint": "https://jw.nju.edu.cn/ggtz/list{page}.htm",
+      "estimatedCount": 0,
+      "description": "从HTML中发现的list链接"
+    },
+    {
+      "name": "列表页 24772",
+      "url": "http://jw.nju.edu.cn/24772/list.htm",
+      "type": "news_title",
+      "paginationType": "listN",
+      "paginationHint": "http://jw.nju.edu.cn/24772/list{page}.htm",
+      "estimatedCount": 0,
+      "description": "从HTML中发现的list链接"
+    },
+    {
+      "name": "列表页 24739",
+      "url": "http://jw.nju.edu.cn/24739/list.htm",
+      "type": "news_title",
+      "paginationType": "listN",
+      "paginationHint": "http://jw.nju.edu.cn/24739/list{page}.htm",
+      "estimatedCount": 0,
+      "description": "从HTML中发现的list链接"
+    },
+    {
+      "name": "列表页 24683",
+      "url": "http://jw.nju.edu.cn/24683/list.htm",
+      "type": "news_title",
+      "paginationType": "listN",
+      "paginationHint": "http://jw.nju.edu.cn/24683/list{page}.htm",
+      "estimatedCount": 0,
+      "description": "从HTML中发现的list链接"
+    },
+    {
+      "name": "列表页 24778",
+      "url": "http://jw.nju.edu.cn/24778/list.htm",
+      "type": "news_title",
+      "paginationType": "listN",
+      "paginationHint": "http://jw.nju.edu.cn/24778/list{page}.htm",
+      "estimatedCount": 0,
+      "description": "从HTML中发现的list链接"
+    },
+    {
+      "name": "列表页 24780",
+      "url": "http://jw.nju.edu.cn/24780/list.htm",
+      "type": "news_title",
+      "paginationType": "listN",
+      "paginationHint": "http://jw.nju.edu.cn/24780/list{page}.htm",
+      "estimatedCount": 0,
+      "description": "从HTML中发现的list链接"
+    },
+    {
+      "name": "列表页 24779",
+      "url": "http://jw.nju.edu.cn/24779/list.htm",
+      "type": "news_title",
+      "paginationType": "listN",
+      "paginationHint": "http://jw.nju.edu.cn/24779/list{page}.htm",
+      "estimatedCount": 0,
+      "description": "从HTML中发现的list链接"
+    },
+    {
+      "name": "列表页 24729",
+      "url": "https://jw.nju.edu.cn/24729/list.htm",
+      "type": "news_title",
+      "paginationType": "listN",
+      "paginationHint": "https://jw.nju.edu.cn/24729/list{page}.htm",
+      "estimatedCount": 0,
+      "description": "从HTML中发现的list链接"
+    },
+    {
+      "name": "列表页 24734",
+      "url": "https://jw.nju.edu.cn/24734/list.htm",
+      "type": "news_title",
+      "paginationType": "listN",
+      "paginationHint": "https://jw.nju.edu.cn/24734/list{page}.htm",
+      "estimatedCount": 0,
+      "description": "从HTML中发现的list链接"
+    },
+    {
+      "name": "列表页 24735",
+      "url": "https://jw.nju.edu.cn/24735/list.htm",
+      "type": "news_title",
+      "paginationType": "listN",
+      "paginationHint": "https://jw.nju.edu.cn/24735/list{page}.htm",
+      "estimatedCount": 0,
+      "description": "从HTML中发现的list链接"
+    },
+    {
+      "name": "列表页 24736",
+      "url": "https://jw.nju.edu.cn/24736/list.htm",
+      "type": "news_title",
+      "paginationType": "listN",
+      "paginationHint": "https://jw.nju.edu.cn/24736/list{page}.htm",
+      "estimatedCount": 0,
+      "description": "从HTML中发现的list链接"
+    }
+  ],
+  "pagination": {
+    "type": "listN",
+    "baseUrl": "https://jw.nju.edu.cn/js/list.htm?key=",
+    "pattern": "https://jw.nju.edu.cn/js/list{page}.htm?key="
+  },
+  "extraction": {
+    "filterKeywords": [
+      "学院概览",
+      "学院简介",
+      "师资队伍",
+      "科学研究",
+      "人才培养",
+      "党的建设",
+      "首页",
+      "English"
+    ]
+  },
+  "notes": "使用启发式分析（无LLM）"
+}

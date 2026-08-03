@@ -1,0 +1,42 @@
+{
+  "meta": {
+    "domain": "cs.nju.edu.cn",
+    "siteName": "计算机学院主页",
+    "strategyVersion": 3,
+    "created": "2026-08-01T14:52:32.738Z",
+    "updated": "2026-08-02T12:00:00.000Z"
+  },
+  "entries": [
+    {
+      "name": "计算机学院通知公告",
+      "url": "https://cs.nju.edu.cn/1702/list.htm",
+      "type": "news_title",
+      "description": "教务通知、公告等",
+      "paginationType": "listN",
+      "paginationHint": "/1702/list.htm{page}.htm",
+      "estimatedCount": 50
+    }
+  ],
+  "pagination": {
+    "type": "listN",
+    "baseUrl": "https://cs.nju.edu.cn/1702/list.htm",
+    "pattern": "/1702/list.htm{page}.htm"
+  },
+  "extraction": {
+    "titleMatch": "title|.article-title|h1",
+    "dateMatch": "time|.news-date|.date",
+    "hrefMatch": "",
+    "filterKeywords": [
+      "学院概览",
+      "学院简介",
+      "师资队伍",
+      "科学研究",
+      "人才培养",
+      "党的建设",
+      "首页",
+      "English"
+    ]
+  },
+  "notes": "正确URL: /1702/list.htm（通知公告栏）",
+  "_upgradedFrom": "v2"
+}

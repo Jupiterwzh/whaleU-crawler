@@ -1,0 +1,35 @@
+# 蓝鲸U - Git忽略配置
+
+# 环境文件（包含API Key）
+.env
+.env.local
+.env.*.local
+
+# Node.js依赖
+node_modules/
+
+# 浏览器
+browser/chrome/
+
+# Claude Code内存目录
+.claude/memory/
+.claude/*.log
+
+# 数据文件
+data/*.jsonl
+data/strategies/*.draft.json
+data/strategies/*.in-progress.json
+!data/strategies/.gitkeep
+
+# 备份文件
+_backup_*.js
+*.backup
+*.bak
+
+# 操作系统文件
+.DS_Store
+Thumbs.db
+
+# 临时文件
+*.tmp
+*.log
