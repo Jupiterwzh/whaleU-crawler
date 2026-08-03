@@ -84,4 +84,32 @@
 - [AI-sub-审查] 规格✓ 质量✓，2 Minor（源自 brief，不阻断）：缺 key 测试用裸 try/except 而非 pytest.raises；文本测试隐式依赖 conftest mock_env
 - [AI-主] 通过，Minor 记入账本延迟处理
 
+### Task 2-5: 工具系统（Tool/Registry + file/web/shell tools）— 完成
+- [AI-sub-实现] Task 2 Tool+ToolRegistry(82034ec) → Task 3 file_tools(eca571d) → Task 4 fetch_url(b0d63ce) → Task 5 run_shell(d1dda0d)，各 TDD 通过
+- [AI-主] Task 2 后发现 __init__.py 未被 git 跟踪（.gitignore 旧 src/ 规则误忽略），补提交修复(355b105)
+- [AI-sub-审查] Task 2-5 逐个审查，规格✓ 质量✓（Task 4/5 评 A），Minor 均源自 brief 逐字复制，不阻断
+- [AI-主] 全部通过，进入 Task 6
+
+### Task 6-10: 门控/轨迹/装配/循环/入口 — 完成
+- [AI-sub-实现] Task 6 Guardrail+policy.yaml(983ce0e) → Task 7 Tracer(bb542ca) → Task 8 Harness+agent.yaml(7004735) → Task 9 AgentLoop(3500457) → Task 10 main.py(b117192)
+- [AI-sub-审查] Task 6-8、10 顺利通过；**Task 9 审查发现 2 个 Important**：①assistant 消息缺 tool_calls 字段（真实 LLM 必失败）②多 tool_call 时 assistant 消息重复追加
+- [AI-主] Task 9 修复轮 1/5：恢复原实现者，修复两个问题 + 新增 test_loop_assistant_msg_has_tool_calls 验证 → 范围复审两发现均 ADDRESSED(e82953d)
+- [AI-主] Task 6 标记的 ask_user input() EOFError 问题，Task 9 已加 try/except 防护
+- 全量 20 测试通过，进入 Task 11
+
+### Task 11: 爬虫适配（collector.js 委托）— 完成
+- [AI-sub-实现] 改 collector.js --site 无策略分支：spawnSync 调 `python main.py --explore-only`，相对路径+env 注入，回退启发式；修正 brief 变量重名(existing→agentStrategy)；node --check 通过；crawler git 提交 ee5414b
+- [AI-sub-审查] 规格✓ 质量 A，路径无硬编码、无递归、变量重名修正合理
+
+### [AI-主] 最终全分支审查
+- 13 commit，20 测试全绿，SPEC 7 组件全覆盖，6 验收标准达成
+- 无 Critical/Important；M1(.env.example 机器路径)已顺手修为通用占位(fba5e8a)
+- 裁定：✅ 批准合并
+
+### Task 12: 验收 — 待手动执行
+- [AI-主] 已跑全量测试(20/20) + Harness 干跑装配验证(OK)
+- 真实验收需用户手动：真实 API key + 网络 + 人工判断
+- 已创建 `explorer-agent/MANUAL_CHECKS.md`（6 项手动检查清单 + 命令 + 预期）
+- **提醒用户执行手动检查**
+
 ---
