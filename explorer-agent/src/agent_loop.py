@@ -1,8 +1,23 @@
 # src/agent_loop.py
 """Agent 核心循环。LLM 只占一行决策，其余全是工程。"""
 import json
+from datetime import datetime
 
 from .llm.client import LLMClient
+
+
+def _save_snapshot(H, text, round_num):
+    """保存当前策略快照到 traces/backup-<trace_id>-round<N>.json"""
+    backup = {
+        "trace_id": H.tracer.trace_id,
+        "round": round_num,
+        "timestamp": datetime.now().isoformat(),
+        "text": text,
+    }
+    path = H.tracer.output_dir / f"backup-{H.tracer.trace_id}-round{round_num}.json"
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(backup, f, ensure_ascii=False, indent=2)
+    return path
 
 
 class AgentLoop:
@@ -18,7 +33,7 @@ class AgentLoop:
             {"role": "user", "content": goal},
         ]
         max_steps = H.config["agent"].get("max_steps", 30)
-        max_adjustments = 3
+        max_adjustments = 5
         tracer_step = 0
         round_idx = 0
 
@@ -44,16 +59,42 @@ class AgentLoop:
                     print(f"  思考: {text[:300]}")
 
                 if not tool_calls:
-                    print(f"\n=== 第 {round_idx + 1} 轮探索完成 ===")
-                    ans = input(f"Agent 输出:\n{text[:500]}\n\n确认此结果? (y/调整建议): ")
+                    print(f"\n=== 第 {round_idx + 1} 轮探索完成 ===\n")
+
+                    if round_idx == max_adjustments:
+                        ans = input(f"Agent 输出:\n{text[:500]}\n\n最终确认? (y=确认/暂存=保存退出/放弃=不保存退出): ")
+                        if ans.lower() == "y":
+                            H.tracer.flush()
+                            return text
+                        if "暂存" in ans:
+                            p = _save_snapshot(H, text, round_idx + 1)
+                            print(f"已暂存至 {p}")
+                            H.tracer.flush()
+                            return f"已暂存（第 {round_idx + 1} 轮结果）"
+                        print("已放弃")
+                        H.tracer.flush()
+                        return "已放弃"
+
+                    remaining = max_adjustments - round_idx
+                    if remaining > 0:
+                        print(f"（还可调整 {remaining} 次）")
+                    ans = input(f"Agent 输出:\n{text[:500]}\n\n确认? (y/调整建议): ")
                     if ans.lower() == "y":
                         H.tracer.flush()
                         return text
+
                     round_idx += 1
+
+                    if round_idx == 3:
+                        p = _save_snapshot(H, text, round_idx)
+                        print(f"⚠️ 已自动备份至 {p}")
+                        print("⚠️ 已达 3 次调整，上限 5 次，请合理使用。")
+
                     if round_idx > max_adjustments:
                         print("已达最大调整次数，自动完成")
                         H.tracer.flush()
                         return text
+
                     break  # 跳出内层循环，外层启动新一轮
 
                 context.append({
