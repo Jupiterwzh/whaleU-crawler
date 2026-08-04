@@ -238,3 +238,24 @@
 - [ ] 小问题：`无关文档/` 下有被移走的 AGENT_STRUCTURE.md / SDD_TUTORIAL.md / notes.md / 教程.md（未提交），且 AGENTS.md B6 仍把 AGENT_STRUCTURE.md 列为待维护文档——待用户确认是否归档
 
 ---
+
+## 2026-08-04 会话六：.env 自动加载（python-dotenv）
+
+### [人] 指令
+- 检查 1 因未 source .env 失败；要求加自动加载，并更新相关文档
+- 后续将发展成多 Agent 协作系统，当前先按方案 1 实现 MVP
+
+### [AI] brainstorm + spec
+- 走 brainstorming skill，提 3 方案，采纳方案 1（main.py 内置 load_env + 硬依赖）
+- spec 第 6 节记录多 Agent 迁移路径：出现第二个需独立加载 env 的入口时，提取 load_env 到 src/env.py
+- spec 提交 0424ae8，用户复核通过
+
+### [AI] 实现（TDD）
+- requirements.txt 加 python-dotenv>=1.0
+- main.py 加 load_env()（Path(__file__).resolve().parent/.env，override=False），main() 开头调用
+- 新增 tests/test_main_env.py（mock load_dotenv，断言路径+override）
+- 全量 22 passed（原 21 + 新 1），无回归
+
+### [AI] 文档同步
+- .env.example / MANUAL_CHECKS.md / AGENT_STRUCTURE.md / 本日志
+- 去掉"必须同终端 source"警告，改为"自动加载"

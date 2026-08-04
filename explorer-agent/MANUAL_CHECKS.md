@@ -17,12 +17,12 @@
 cp .env.example .env
 # 编辑 .env，填入你的 CherryIN key 和真实路径
 
-# 2. 每次开新终端时，先加载 .env 再运行 Agent
+# 2. 直接运行 Agent（main.py 自动加载 .env，无需 source）
 cd /home/wangzhiheng/whaleU-crawler/explorer-agent
-set -a && source .env && set +a
+python main.py "探索 https://cs.nju.edu.cn/ 的通知公告入口，生成爬取策略"
 ```
 
-> **重要**：Python 不自动加载 .env（无 python-dotenv 依赖）。必须在运行 `python main.py` **之前**、**同一个终端**里执行 `source .env`，否则环境变量不生效。
+> **说明**：`main.py` 启动时通过 python-dotenv 自动加载 `.env`，无需手动 `source`。`.env` 仍需存在并填入真实值。
 
 ### 方法 B（替代）：直接 export
 
