@@ -50,3 +50,4 @@
 19. **默认 subagent-driven 执行** — 有实现计划时，按 subagent-driven-development skill 每 Task 派一个新 subagent，Task 间 controller 复核。
 20. **子 Agent 行为记入日志** — 每个 subagent 的任务、commit、测试结果、复核结论简记入 `AGENT_LOG.md`。
 21. **小改动减仪式** — 小改动可跳过 brainstorm→spec→plan→逐级确认的繁琐流程，执行前问一句即可；用户不认可会在询问时提出。大改动仍走完整流程。
+22. **测试范围** — 改动时默认只测新功能（focused test），不跑全量测试；确需全量测试时先问用户是否允许。

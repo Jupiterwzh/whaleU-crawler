@@ -15,3 +15,6 @@ explorer-agent/traces/
 
 # 临时
 *.bak
+
+# 用户阅读/学习文档（教程等，不跟踪）
+无关文档/
