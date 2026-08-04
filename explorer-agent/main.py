@@ -2,13 +2,22 @@
 """explorer-agent 入口。两种模式：--explore-only（爬虫委托）/ 直接目标（Agent 编排）。"""
 import os
 import sys
+from pathlib import Path
+
+from dotenv import load_dotenv
 
 from src.harness import Harness
 from src.agent_loop import AgentLoop
 from src.llm.client import LLMClient
 
 
+def load_env():
+    """从 main.py 同目录的 .env 加载环境变量。已存在的 env 优先（override=False）。"""
+    load_dotenv(Path(__file__).resolve().parent / ".env", override=False)
+
+
 def main():
+    load_env()
     args = sys.argv[1:]
     explore_only = "--explore-only" in args
     if explore_only:
