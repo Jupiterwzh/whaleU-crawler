@@ -275,4 +275,13 @@
 - **改善**：`main.py` 模式 B 自动追加策略保存路径到 goal，Agent 不再盲猜写路径
 - **附带**：用户反馈的 3 条工作偏好已固化为 AGENTS.md G19-G22（subagent-driven、子 Agent 记日志、小改动减仪式、仅测新功能）
 
+### [AI+人] 交互确认 + 步数重置
+- **用户需求**：Agent 跑完不应直接结束，应展示结果请用户确认；可提调整建议，步数重置释放全预算继续优化；全程可视化思考→动作→结果
+- **实现**：
+  - Guardrail `ask_user` 显示工具名、路径、内容预览（非黑箱）
+  - `main.py` 模式 B 自动注入策略保存路径到 goal
+  - `agent_loop.py`：`for`→`while` 双层循环，探索完成后 `input()` 等待确认（y/调整建议）；反馈注入后 step 归零，Agent 满预算继续；最多 3 轮调整
+  - 每步打印思考/动作/结果（全流程可视化）
+- **测试**：mock `builtins.input→y`，3 个 agent_loop 测试全过（commit `85a32ca`, `4c9833a`, `cfb90d4`）
+
 ---
