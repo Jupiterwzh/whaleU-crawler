@@ -280,8 +280,18 @@
 - **实现**：
   - Guardrail `ask_user` 显示工具名、路径、内容预览（非黑箱）
   - `main.py` 模式 B 自动注入策略保存路径到 goal
-  - `agent_loop.py`：`for`→`while` 双层循环，探索完成后 `input()` 等待确认（y/调整建议）；反馈注入后 step 归零，Agent 满预算继续；最多 3 轮调整
+  - `agent_loop.py`：`for`→`while` 双层循环，探索完成后 `input()` 等待确认（y/调整建议）；反馈注入后 step 归零，Agent 满预算继续；最多 5 轮调整
   - 每步打印思考/动作/结果（全流程可视化）
 - **测试**：mock `builtins.input→y`，3 个 agent_loop 测试全过（commit `85a32ca`, `4c9833a`, `cfb90d4`）
+
+### [AI+人] 调整上限 + 自动备份 + 输出格式
+- **用户设计**：
+  - 调整上限 5 次，第 3 次自动备份（`traces/backup-<trace_id>-round3.json`）并提示
+  - 第 6 次（上限满）仅允许确认/暂存（保存快照退出）/放弃
+  - Agent 完成探索后输出：策略摘要（自然语言版）+ 策略 JSON + 入口评估（✅推荐/⚠️可疑/❌不易爬取）
+- **实现**：
+  - `agent_loop.py`：`max_adjustments=5`、`_save_snapshot()` 函数、最终轮三选项
+  - `rules/AGENTS.md`：输出格式指令（自然语言版 + JSON + 入口评估）
+- **测试**：3 个现有 agent_loop 测试全过（commit `60701f5`）
 
 ---
