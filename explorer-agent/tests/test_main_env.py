@@ -1,4 +1,4 @@
-"""load_env() 用正确路径、override=False 调用 load_dotenv。"""
+"""load_env() 用正确路径、override=True 调用 load_dotenv。"""
 import main
 
 
@@ -9,4 +9,4 @@ def test_load_env_passes_correct_env_path(monkeypatch):
     assert len(calls) == 1
     args, kwargs = calls[0]
     assert str(args[0]).endswith("/.env")
-    assert kwargs["override"] is False
+    assert kwargs["override"] is True

@@ -12,8 +12,8 @@ from src.llm.client import LLMClient
 
 
 def load_env():
-    """从 main.py 同目录的 .env 加载环境变量。已存在的 env 优先（override=False）。"""
-    load_dotenv(Path(__file__).resolve().parent / ".env", override=False)
+    """从 main.py 同目录的 .env 加载环境变量（覆盖已存在的 env 使 .env 始终优先）。"""
+    load_dotenv(Path(__file__).resolve().parent / ".env", override=True)
 
 
 def main():
