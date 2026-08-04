@@ -50,7 +50,11 @@ class Guardrail:
             if verdict == "deny":
                 return False, f"动作被拒绝: {reason}"
             if verdict == "ask_user":
-                ans = input(f"⚠️ {reason}。允许吗? (y/n): ")
+                args_preview = ", ".join(
+                    f"{k}={v[:80] if isinstance(v, str) and len(v) > 80 else v}"
+                    for k, v in args.items()
+                )
+                ans = input(f"⚠️ [{tool}] {reason}\n  参数: {args_preview}\n  允许吗? (y/n): ")
                 if ans.lower() == "y":
                     return True, f"用户批准: {reason}"
                 return False, f"用户拒绝: {reason}"

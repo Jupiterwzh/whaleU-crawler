@@ -28,7 +28,12 @@ def main():
         strategy_path = f"{strategies_dir}/{domain}.json" if strategies_dir else "策略目录"
         goal = f"探索 {url} 的通知公告入口，生成爬取策略 JSON，写入 {strategy_path}。不要调用爬虫执行爬取。"
     else:
-        goal = " ".join(args) or input("🎯 任务: ")
+        user_goal = " ".join(args) or input("🎯 任务: ")
+        strategies_dir = os.environ.get("STRATEGIES_DIR", "")
+        if strategies_dir:
+            goal = f"{user_goal}。策略 JSON 保存到 {strategies_dir}/<domain>.json"
+        else:
+            goal = user_goal
 
     harness = Harness.from_yaml("agent.yaml")
     llm = LLMClient()

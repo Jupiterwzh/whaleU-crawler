@@ -267,4 +267,12 @@
 - **附带**：发现 `crawler/data/strategies/cs.nju.edu.cn.json` 工作树缺失（git HEAD 安全），已 `git restore` 恢复，供检查 2/3 使用
 - SDD 工作区 `.superpowers/sdd/2026-08-04-dotenv-auto-load/` 任务完成后清理（记录在 git 历史）
 
+### [AI] key 排查 + Guardrail 改进（后续）
+- **问题**：检查 1 跑通认证后，`load_env` 仍然加载旧 22-字符 key → 401
+- **定位**（systematic-debugging 逐层诊断 + 用户配合）：`override=False` 下 shell 预置的旧 `LLM_API_KEY`（22 字符）阻止了 `.env` 的新 `${CHERRYIN_API_KEY}` 展开
+- **修复**：`load_env()` 改为 `override=True`，`.env` 始终取用（commit `382212a`）
+- **改善**：Guardrail `ask_user` 增加工具名、路径、内容预览（非黑箱审批）
+- **改善**：`main.py` 模式 B 自动追加策略保存路径到 goal，Agent 不再盲猜写路径
+- **附带**：用户反馈的 3 条工作偏好已固化为 AGENTS.md G19-G22（subagent-driven、子 Agent 记日志、小改动减仪式、仅测新功能）
+
 ---
