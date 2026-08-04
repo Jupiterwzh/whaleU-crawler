@@ -259,3 +259,12 @@
 ### [AI] 文档同步
 - .env.example / MANUAL_CHECKS.md / AGENT_STRUCTURE.md / 本日志
 - 去掉"必须同终端 source"警告，改为"自动加载"
+
+### [AI] 子Agent 执行记录（subagent-driven-development）
+- **Task 1**（依赖+load_env+测试）：派 general subagent → commit `7d0b031`，22/22 测试；controller 复核：重跑 suite=`22 passed`、diff 与 brief 逐字一致、`override=False`、无硬编码 → review clean
+- **Task 2**（文档同步）：派 general subagent → commit `5c80671`，4 文档同步；controller 复核 diff-stat → review clean；concern：`无关文档/AGENT_STRUCTURE.md` 原为未跟踪（用户移入未提交），按 brief `git add` 提交为新文件（421 行，含 2 处编辑），根目录删除仍 unstaged（属用户 pending 重组，非本任务范围）
+- **最终复核**：controller 自审（改动小，按用户"小改动减仪式"指令不另派 reviewer subagent）；全分支 diff `5933e01..HEAD` 干净
+- **附带**：发现 `crawler/data/strategies/cs.nju.edu.cn.json` 工作树缺失（git HEAD 安全），已 `git restore` 恢复，供检查 2/3 使用
+- SDD 工作区 `.superpowers/sdd/2026-08-04-dotenv-auto-load/` 任务完成后清理（记录在 git 历史）
+
+---
