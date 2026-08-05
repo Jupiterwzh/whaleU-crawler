@@ -1,13 +1,33 @@
 """前导检查：崩溃恢复→暂存→备份→策略检查。"""
 import json
+import sys
 from dataclasses import dataclass, field
 
 from .filestore import FileStore
 
 
-def _ask_yn(prompt: str) -> bool:
-    ans = input(prompt).strip().lower()
-    return ans in ("y", "yes")
+def _confirm(prompt: str, default: bool, wrongs: list) -> bool:
+    """带重试的 y/n 确认。wrongs[0] 跨问题共享，≥2 则退出。3 次错误后用 default。"""
+    if wrongs[0] >= 2:
+        print("本场对话已出现多次无效输入，为安全退出。")
+        sys.exit(1)
+    prefix = prompt.strip()
+    for attempt in range(3):
+        ans = input(prompt).strip()
+        if ans.lower() in ("y", "yes"):
+            return True
+        if ans.lower() in ("n", "no"):
+            return False
+        wrongs[0] += 1
+        if wrongs[0] >= 2:
+            print("本场对话已出现多次无效输入，为安全退出。")
+            sys.exit(1)
+        remaining = 2 - attempt
+        if remaining > 0:
+            print(f"  请输入 y 或 n（还剩 {remaining} 次）")
+    default_str = "y" if default else "n"
+    print(f"  已耗尽重试次数，默认采用: {default_str}")
+    return default
 
 
 @dataclass
@@ -18,7 +38,7 @@ class PreflightResult:
 
 
 def preflight(domain: str, store: FileStore, auto_confirm: bool = False) -> PreflightResult:
-    _yn = (lambda msg: True if auto_confirm else _ask_yn(msg))
+    wrongs = [0]  # mutable session counter
 
     if store.crash_exists(domain):
         print(f"发现意外退出前的暂存策略（{domain}.crash.json），将进入保存流程")
@@ -26,7 +46,7 @@ def preflight(domain: str, store: FileStore, auto_confirm: bool = False) -> Pref
 
     mark_read_checkpoint = False
     if store.checkpoint_exists(domain):
-        if _yn(f"检测到 {domain} 的暂存文件，是否参考？（y/n）: "):
+        if auto_confirm or _confirm(f"检测到 {domain} 的暂存文件，是否参考？（y/n）: ", True, wrongs):
             mark_read_checkpoint = True
         else:
             store.checkpoint_delete(domain)
@@ -35,23 +55,23 @@ def preflight(domain: str, store: FileStore, auto_confirm: bool = False) -> Pref
     # A: 备份管理
     if store.backup_count(domain) > 0:
         n = store.backup_count(domain)
-        if _yn(f"检测到 {domain} 有 {n} 个备份（上限 3），是否管理？（y/n）: "):
+        if auto_confirm or _confirm(f"检测到 {domain} 有 {n} 个备份（上限 3），是否管理？（y/n）: ", False, wrongs):
             _manage_backups(domain, store)
 
     # B: 已有策略
     goal_context = ""
     if store.strategy_exists(domain):
         print(f"域名 {domain} 已有策略。")
-        if not _yn("是否仍要爬取？（y/n）: "):
-            print(f"已取消。新的爬取不会覆盖已有策略。如需重新爬取，请再次运行并输入 y。")
+        if not (auto_confirm or _confirm("是否仍要爬取？（y/n）: ", False, wrongs)):
+            print(f"已取消。如需重新爬取 {domain}，请重新运行。")
             return PreflightResult(should_exit=True)
-        if _yn("是否参考已有策略加以改进？（y/n）: "):
+        if auto_confirm or _confirm("是否参考已有策略加以改进？（y/n）: ", True, wrongs):
             data = store.strategy_read(domain)
             if data:
                 summary = json.dumps(data, ensure_ascii=False, indent=2)[:1000]
                 goal_context += f"已有策略如下（供参考改进）：\n{summary}\n"
         else:
-            if _yn("是否删除已有策略？（y/n）: "):
+            if auto_confirm or _confirm("是否删除已有策略？（y/n）: ", False, wrongs):
                 store.strategy_delete(domain)
 
     # C: 暂存

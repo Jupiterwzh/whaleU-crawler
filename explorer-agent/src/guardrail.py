@@ -54,9 +54,15 @@ class Guardrail:
                     f"{k}={v[:80] if isinstance(v, str) and len(v) > 80 else v}"
                     for k, v in args.items()
                 )
-                ans = input(f"⚠️ [{tool}] {reason}\n  参数: {args_preview}\n  允许吗? (y/n): ")
-                if ans.lower() == "y":
-                    return True, f"用户批准: {reason}"
-                return False, f"用户拒绝: {reason}"
+                for attempt in range(3):
+                    ans = input(f"⚠️ [{tool}] {reason}\n  参数: {args_preview}\n  允许吗? (y/n): ").strip().lower()
+                    if ans in ("y", "yes"):
+                        return True, f"用户批准: {reason}"
+                    if ans in ("n", "no"):
+                        return False, f"用户拒绝: {reason}"
+                    remaining = 2 - attempt
+                    if remaining > 0:
+                        print(f"  请输入 y 或 n（还剩 {remaining} 次）")
+                return False, f"已耗尽重试次数，默认拒绝: {reason}"
             return True, ""
         return True, ""
