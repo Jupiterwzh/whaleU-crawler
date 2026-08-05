@@ -37,3 +37,4 @@ paths:
   strategies_dir: "${STRATEGIES_DIR}"
   crawler_script: "${CRAWLER_SCRIPT}"
   nju_browser: "${NJU_BROWSER_DIR}"
+  data_dir: "${DATA_DIR}"
