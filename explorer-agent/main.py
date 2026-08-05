@@ -39,7 +39,13 @@ def main():
         user_text = " ".join(args)
         domain = _extract_domain(user_text)
 
-    data_dir = os.environ.get("DATA_DIR", str(Path(__file__).resolve().parent.parent / "data"))
+    data_dir = os.environ.get("DATA_DIR", "")
+    if not data_dir:
+        strategies_dir = os.environ.get("STRATEGIES_DIR", "")
+        if strategies_dir:
+            data_dir = str(Path(strategies_dir).resolve().parent)
+        else:
+            data_dir = str(Path(__file__).resolve().parent.parent / "data")
     store = FileStore(base_dir=data_dir)
 
     # ---- 前导 ----
