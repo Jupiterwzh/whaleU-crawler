@@ -323,4 +323,12 @@ data/checkpoints/<domain>.crash.json    特殊暂存 0/1
 ### 待办
 - [ ] 用户跑检查 1 验证三段式流程（前导检查 + Agent 探索 + 后导保存）
 
+### [AI] 后续修复回合
+- **策略路径相对化导致 Guardrail 误判**（commit `00f4ef7`）：`STRATEGIES_DIR` 相对路径经 `os.path.realpath` 可能解析错误→Agent 写路径被拦。修复：`harness.py` Guardrail context 和 `main.py` goal 均 `Path.resolve()` 为绝对路径。
+- **DATA_DIR 推导**（commit `6b818a5`）：`FileStore` 的 data/ 和 crawler/data/ 是两个目录→前导检测不到已有策略。修复：`DATA_DIR` 从 `STRATEGIES_DIR` 推导上级目录。
+- **postflight crash_read 不存在**（commit `8c644bc`）：Agent 直写策略文件不写 crash→postflight 读 crash 报错。修复：postflight 先读新策略文件→写入 crash 防丢→用 main.py 传入的 old_data 做备份/替换。
+- **重试机制**（commit `566dd80`）：429 速率限制崩溃进程。修复：`LLMClient.chat()` 重试 5 次 + 指数退避（1s→16s），仅限 `RateLimitError` 和 `APIConnectionError`。
+- **y/n 强制匹配 + 安全退出**（commit `92fc1f6`）：`preflight` 和 `guardrail` 的 y/n 提示改为 3 次重试 + 默认回退值 + 同场对话 ≥2 次无效输入退出。
+- **注入防御**（commit 待提交）：Agent 反馈注入处加安全边界标注，防止用户输入中的指令注入攻击。
+
 ---
