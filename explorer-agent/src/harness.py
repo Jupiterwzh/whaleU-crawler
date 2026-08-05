@@ -63,7 +63,7 @@ class Harness:
         guardrail = Guardrail.from_yaml(
             str(base / cfg["guardrail"]["policy"]),
             context={
-                "strategies_dir": paths.get("strategies_dir", ""),
+                "strategies_dir": str(Path(paths.get("strategies_dir", ".")).resolve()) if paths.get("strategies_dir") else "",
                 "project_root": project_root,
             },
         )
