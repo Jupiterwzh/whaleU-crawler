@@ -31,8 +31,10 @@ class FileStore:
 
     def strategy_write(self, domain: str, data: dict) -> Path:
         p = self.strategy_path(domain)
-        with open(p, "w", encoding="utf-8") as f:
+        tmp = p.with_suffix(".tmp")
+        with open(tmp, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
+        tmp.replace(p)
         return p
 
     def strategy_delete(self, domain: str):
@@ -115,8 +117,11 @@ class FileStore:
         return self.crash_path(domain).exists()
 
     def crash_write(self, domain: str, data: dict):
-        with open(self.crash_path(domain), "w", encoding="utf-8") as f:
+        p = self.crash_path(domain)
+        tmp = p.with_suffix(".tmp")
+        with open(tmp, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
+        tmp.replace(p)  # 原子 rename，不能写一半
 
     def crash_read(self, domain: str) -> dict:
         with open(self.crash_path(domain), encoding="utf-8") as f:
