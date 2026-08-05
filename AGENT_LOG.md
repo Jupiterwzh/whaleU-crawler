@@ -330,5 +330,6 @@ data/checkpoints/<domain>.crash.json    特殊暂存 0/1
 - **重试机制**（commit `566dd80`）：429 速率限制崩溃进程。修复：`LLMClient.chat()` 重试 5 次 + 指数退避（1s→16s），仅限 `RateLimitError` 和 `APIConnectionError`。
 - **y/n 强制匹配 + 安全退出**（commit `92fc1f6`）：`preflight` 和 `guardrail` 的 y/n 提示改为 3 次重试 + 默认回退值 + 同场对话 ≥2 次无效输入退出。
 - **注入防御**（commit `55eeefe`）：Agent 反馈注入处加安全边界标注，防止用户输入中的指令注入攻击。
+- **文档同步 + 清理**（commit `dec8c2c`、`a39b980`）：README.md/MANUAL_CHECKS.md 更新为三段式工作流；删除无用文件（PLAN.md、strategies.json v2 标记、debug_layers.py、旧 crawler data jsonl、旧 src/ 目录、旧 SDD 工作区 PLAN/、旧 traces/ 测试产物）
 
 ---
