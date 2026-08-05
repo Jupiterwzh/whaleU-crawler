@@ -329,6 +329,6 @@ data/checkpoints/<domain>.crash.json    特殊暂存 0/1
 - **postflight crash_read 不存在**（commit `8c644bc`）：Agent 直写策略文件不写 crash→postflight 读 crash 报错。修复：postflight 先读新策略文件→写入 crash 防丢→用 main.py 传入的 old_data 做备份/替换。
 - **重试机制**（commit `566dd80`）：429 速率限制崩溃进程。修复：`LLMClient.chat()` 重试 5 次 + 指数退避（1s→16s），仅限 `RateLimitError` 和 `APIConnectionError`。
 - **y/n 强制匹配 + 安全退出**（commit `92fc1f6`）：`preflight` 和 `guardrail` 的 y/n 提示改为 3 次重试 + 默认回退值 + 同场对话 ≥2 次无效输入退出。
-- **注入防御**（commit 待提交）：Agent 反馈注入处加安全边界标注，防止用户输入中的指令注入攻击。
+- **注入防御**（commit `55eeefe`）：Agent 反馈注入处加安全边界标注，防止用户输入中的指令注入攻击。
 
 ---

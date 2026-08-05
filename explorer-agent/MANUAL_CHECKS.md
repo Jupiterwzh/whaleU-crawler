@@ -1,39 +1,27 @@
 # 手动检查清单 — explorer-agent 验收
 
 > 这些操作需要你（用户）手动执行，因为它们需要真实 API Key、网络访问或人工判断。
-> AI 已完成全部代码实现 + 20 个自动化测试通过 + 最终审查批准。
+> AI 已完成全部代码实现 + 21+ 自动化测试通过。
 > 按顺序执行以下检查，每步附预期结果。
 
 ---
 
 ## 前置：配置环境变量
 
-你需要在终端设置真实环境变量（AI 无法替你填 key）。
+你需要在终端设置真实环境变量。**main.py 启动时自动加载 .env**（python-dotenv），无需手动 source。
 
-### 方法 A（推荐）：.env 文件
+### .env 文件格式
 
-```bash
-# 1. 复制模板并填入真实值（只需做一次）
-cp .env.example .env
-# 编辑 .env，填入你的 CherryIN key 和真实路径
-
-# 2. 直接运行 Agent（main.py 自动加载 .env，无需 source）
-cd /home/wangzhiheng/whaleU-crawler/explorer-agent
-python main.py "探索 https://cs.nju.edu.cn/ 的通知公告入口，生成爬取策略"
-```
-
-> **说明**：`main.py` 启动时通过 python-dotenv 自动加载 `.env`，无需手动 `source`。`.env` 仍需存在并填入真实值。
-
-### 方法 B（替代）：直接 export
+`.env` 应包含：
 
 ```bash
-cd /home/wangzhiheng/whaleU-crawler/explorer-agent
-export LLM_BASE_URL=https://open.cherryin.cc/v1
-export LLM_API_KEY=your-real-cherryin-key
-export LLM_MODEL="deepseek/deepseek-v4-flash(free)"
-export STRATEGIES_DIR=/home/wangzhiheng/whaleU-crawler/crawler/data/strategies
-export CRAWLER_SCRIPT=/home/wangzhiheng/whaleU-crawler/crawler/src/collectors/collector.js
-export NJU_BROWSER_DIR=/home/wangzhiheng/whaleU-crawler/nju-browser
+LLM_BASE_URL="https://open.cherryin.cc/v1"
+LLM_API_KEY=${CHERRYIN_API_KEY}          # 引用 WSL 环境变量的真实 key
+LLM_MODEL="deepseek/deepseek-v4-flash(free)"
+STRATEGIES_DIR="../crawler/data/strategies"
+CRAWLER_SCRIPT="../crawler/src/collectors/collector.js"
+NJU_BROWSER_DIR="../nju-browser"
+# DATA_DIR 可不填，自动从 STRATEGIES_DIR 推导（取上级目录）
 ```
 
 ### 验证环境变量已生效
