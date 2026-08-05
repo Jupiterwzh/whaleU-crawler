@@ -321,7 +321,17 @@ data/checkpoints/<domain>.crash.json    特殊暂存 0/1
 ```
 
 ### 待办
-- [ ] 用户跑检查 1 验证三段式流程（前导检查 + Agent 探索 + 后导保存）
+- [x] 用户跑检查 1 验证三段式流程 ✅ 通过（2026-08-05，策略 JSON 正确，18 步轨迹完整）
+- [ ] 用户跑检查 2（爬虫用策略爬取）
+- [ ] 用户跑检查 3（模式 A 委托）
+- [ ] 用户跑检查 4（Guardrail 拦截）
+- [ ] 用户跑检查 5（轨迹可审计）
+
+### [AI] 检查 1 反馈修复
+- **暂存/退出快捷命令**（commit `75f913c`）：交互确认处增加 `暂存`（保存快照退出）和 `exit`（直接退出）
+- **入口筛选标准**（后放宽，commit `75f913c` 加规则，随后回退）：Agent 规则加过通知公告筛选标准，用户要求"先完全放宽"→回退为不筛选
+- **崩溃安全**（commit `5d64329`）：`strategy_write` 和 `crash_write` 改为原子写（写 .tmp→rename），中断不产生截断文件
+- **文档更新**（commit 待提交）：MANUAL_CHECKS.md 检查1 标完成，agent_loop 加暂存/退出，filestore 原子写
 
 ### [AI] 后续修复回合
 - **策略路径相对化导致 Guardrail 误判**（commit `00f4ef7`）：`STRATEGIES_DIR` 相对路径经 `os.path.realpath` 可能解析错误→Agent 写路径被拦。修复：`harness.py` Guardrail context 和 `main.py` goal 均 `Path.resolve()` 为绝对路径。

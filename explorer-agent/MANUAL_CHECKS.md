@@ -55,23 +55,21 @@ print('>>> 全部通过 <<<')
 
 ## 检查 1：模式 B — Agent 探索并生成策略（核心验收）
 
-**目的**：验证 Agent 能自主探索 cs.nju.edu.cn 并生成可用策略。
+**状态**：✅ 已通过（2026-08-05）  
+策略文件 `crawler/data/strategies/cs.nju.edu.cn.json` 存在、JSON 格式正确、10 个 entries 含 cs.nju.edu.cn URLs  
+18 步轨迹完整记录（`traces/trace-1785939298222.jsonl`）
+
+下次运行命令：
 
 ```bash
 cd /home/wangzhiheng/whaleU-crawler/explorer-agent
-python main.py "探索 https://cs.nju.edu.cn/ 的通知公告入口，生成爬取策略"
+python main.py "探索 https://cs.nju.edu.cn/ 的通知公告入口"
 ```
 
-**预期**：
-- Agent 输出抓取首页、分析导航、抓子页的过程
-- 最终输出"已生成策略"或类似
-- `crawler/data/strategies/cs.nju.edu.cn.json` 被创建/更新
-- `explorer-agent/traces/` 下生成 `trace-*.jsonl` 轨迹文件
-
-**你需确认**：
-- [ ] 策略文件存在且 JSON 格式正确
-- [ ] 策略 entries 里有 cs.nju.edu.cn 的通知列表页 URL（如 /1702/list.htm）
-- [ ] 轨迹文件记录了每步决策
+**已完成**：
+- [x] 策略文件存在且 JSON 格式正确（10 entries）
+- [x] 策略 entries 里有 cs.nju.edu.cn 通知列表页 URL（/1702/list.htm 等）
+- [x] 轨迹文件记录了每步决策（18 步，trace-1785939298222.jsonl）
 
 ---
 
