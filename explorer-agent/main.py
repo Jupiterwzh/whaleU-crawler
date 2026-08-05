@@ -72,13 +72,14 @@ def main():
     goal = goal.strip("。 ")
 
     # ---- Agent 循环 ----
+    old_data = store.strategy_read(domain)  # 快照旧策略（Agent 写入后会覆盖）
     harness = Harness.from_yaml("agent.yaml")
     llm = LLMClient()
     loop = AgentLoop(harness, llm)
     loop.run(goal)
 
     # ---- 后导 ----
-    postflight(domain, store)
+    postflight(domain, store, old_data)
 
 
 if __name__ == "__main__":

@@ -1,39 +1,37 @@
-"""后导保存：crash 写入→策略读出→备份/替换→清理 crash。"""
+"""后导保存：新策略→crash 保护→旧策略备份/替换→清理。"""
 import json
 
 from .filestore import FileStore
 
 
-def postflight(domain: str, store: FileStore):
-    data = store.crash_read(domain)
-    if data is None:
-        print("未发现生成策略，后导跳过")
+def postflight(domain: str, store: FileStore, old_data: dict | None = None):
+    new_data = store.strategy_read(domain)
+    if new_data is None:
+        print("未发现新生成策略，后导跳过")
         return
 
-    if not store.strategy_exists(domain):
-        store.strategy_write(domain, data)
+    store.crash_write(domain, new_data)
+
+    if old_data is None:
         store.crash_delete(domain)
         print(f"策略已保存: {store.strategy_path(domain)}")
         return
 
     ans = input("已有策略，删除还是备份？（删除/备份）: ")
     if "删除" in ans:
-        store.strategy_delete(domain)
-        store.strategy_write(domain, data)
+        store.strategy_write(domain, new_data)
         store.crash_delete(domain)
         print("已删除旧策略，新策略已保存")
     else:
         if store.backup_count(domain) >= 3:
             _manage_backup_limit(domain, store)
         if store.backup_count(domain) < 3:
-            old = store.strategy_read(domain)
-            if old:
-                store.backup_write(domain, old)
-            store.strategy_write(domain, data)
+            store.backup_write(domain, old_data)
+            store.strategy_write(domain, new_data)
             store.crash_delete(domain)
             print("旧策略已备份，新策略已保存")
         else:
-            store.strategy_write(domain, data)
+            store.strategy_write(domain, new_data)
             store.crash_delete(domain)
             print("达到备份上限，旧策略未备份，新策略已保存")
 
