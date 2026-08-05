@@ -294,4 +294,33 @@
   - `rules/AGENTS.md`：输出格式指令（自然语言版 + JSON + 入口评估）
 - **测试**：3 个现有 agent_loop 测试全过（commit `60701f5`）
 
+## 2026-08-05 会话七：三段式流程（preflight + postflight + FileStore）
+
+### [人] 需求
+- 按 无关文档/流程改进设计.md 流程图实现：前导检查（崩溃/暂存/备份/策略）+ 后导保存（备份/替换）+ FileStore 文件层
+- 目录：data/strategies/（策略）、data/backups/（≤3备份）、data/checkpoints/（暂存+crash）
+- crash/checkpoint 不经过 Guardrail，直接读写
+
+### [AI+人] brainstorm + spec + plan
+- 方案 1（三段式模块）采纳 → spec `076ae93` → plan `5ca5734` → 5 task
+- 回答用户问题（目录、格式、实现方式）后走完整 brainstorm 流程
+
+### [AI] SDD 实现（subagent-driven，4 Task）
+- **Task 1** FILESTORE：派 subagent → commit `71732b7`，9/9 测试；subagent 修复了 brief 中 backup_write 和 backup_swap 的 bug（改用 shift 语义）
+- **Task 2** PREFLIGHT：派 subagent → commit `b58838d`，6/6 测试；补了 brief 遗漏的 `import json`
+- **Task 3** POSTFLIGHT：派 subagent → commit `3b50800`，3/3 测试
+- **Task 4** MAIN：派 subagent → commit `5021663`，main.py 重构为三段式 + agent.yaml/.env.example 加 DATA_DIR；18/18 测试全过
+- Task 5 日志：controller 直写 → 提交
+
+### 新文件结构
+```
+data/strategies/<domain>.json        标准策略
+data/backups/<domain>.bak{1,2,3}.json  备份 ≤3
+data/checkpoints/<domain>.checkpoint.json  暂存 0/1
+data/checkpoints/<domain>.crash.json    特殊暂存 0/1
+```
+
+### 待办
+- [ ] 用户跑检查 1 验证三段式流程（前导检查 + Agent 探索 + 后导保存）
+
 ---
