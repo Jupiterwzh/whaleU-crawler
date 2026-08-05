@@ -83,10 +83,20 @@ class AgentLoop:
                     remaining = max_adjustments - round_idx
                     if remaining > 0:
                         print(f"（还可调整 {remaining} 次）")
+                    print("（输入 暂存=保存当前结果并退出，exit=直接退出）")
                     ans = input(f"Agent 输出:\n{text[:500]}\n\n确认? (y/调整建议): ")
                     if ans.lower() == "y":
                         H.tracer.flush()
                         return text
+                    if ans.lower() in ("暂存", "save"):
+                        p = _save_snapshot(H, text, round_idx + 1)
+                        print(f"已暂存至 {p}")
+                        H.tracer.flush()
+                        return f"已暂存（第 {round_idx + 1} 轮结果）"
+                    if ans.lower() in ("exit", "退出", "quit", "q"):
+                        print("已退出")
+                        H.tracer.flush()
+                        return f"用户退出（第 {round_idx + 1} 轮）"
 
                     round_idx += 1
 
