@@ -1,0 +1,195 @@
+"""RAGStore：JSONL 文档库 + 倒排索引 + 新鲜度刷新（纯标准库）。"""
+import hashlib
+import json
+import math
+import re
+import time
+from pathlib import Path
+
+_CJK = r"[\u4e00-\u9fff]"
+
+
+class RAGStore:
+    """倒排索引存储：按 domain+date 分片存 JSONL，建 current/archive 两级索引。"""
+
+    def __init__(self, base_dir: str, refresh_interval_min: int = 30):
+        self._base = Path(base_dir)
+        self._docs = self._base / "docs"
+        self._current = self._base / "index" / "current"
+        self._archive = self._base / "index" / "archive"
+        self._meta_path = self._base / "meta.json"
+        self._refresh_interval_min = refresh_interval_min
+        for d in [self._docs, self._current, self._archive]:
+            d.mkdir(parents=True, exist_ok=True)
+
+    # ---- 分词：连续中文 2-gram，英文单词单个 term ----
+    @staticmethod
+    def _tokenize(text: str) -> list[str]:
+        if not text:
+            return []
+        tokens = []
+        for ch in re.findall(_CJK + r"|[\w]+", text):
+            if re.fullmatch(_CJK, ch):
+                tokens.append(ch)
+            else:
+                tokens.append(ch.lower())
+        # 连续中文做 2-gram（"考试" 独立成词也保留，兼容单字查询）
+        bigrams = []
+        prev = ""
+        for tok in tokens:
+            if re.fullmatch(_CJK, tok):
+                if prev:
+                    bigrams.append(prev + tok)
+                prev = tok
+            else:
+                prev = ""
+        return tokens + bigrams
+
+    # ---- 分片路径 ----
+    def _slice_path(self, domain: str, date: str) -> Path:
+        return self._docs / f"{domain}.{date}.jsonl"
+
+    def _id(self, domain: str, date: str, seq: int) -> str:
+        return f"{domain}.{date}.{seq}"
+
+    # ---- 摄取 ----
+    def ingest(self, records: list[dict]) -> int:
+        added = 0
+        for rec in records:
+            domain = rec.get("domain", "")
+            date = rec.get("date", "")
+            if not domain or not date:
+                continue
+            dedup = rec.get("dedup_hash") or self._sha(rec.get("url", ""), rec.get("title", ""))
+            if self._has_dedup(dedup):
+                continue
+            doc = dict(rec)
+            doc["id"] = self._id(domain, date, self._next_seq(domain, date))
+            doc["dedup_hash"] = dedup
+            doc["crawled_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+            self._append(self._slice_path(domain, date), doc)
+            added += 1
+        return added
+
+    @staticmethod
+    def _sha(url: str, title: str) -> str:
+        return hashlib.sha256(f"{url}|{title}".encode("utf-8")).hexdigest()
+
+    def _has_dedup(self, dedup: str) -> bool:
+        for p in self._docs.glob("*.jsonl"):
+            for line in p.read_text(encoding="utf-8").splitlines():
+                if not line.strip():
+                    continue
+                if json.loads(line).get("dedup_hash") == dedup:
+                    return True
+        return False
+
+    def _next_seq(self, domain: str, date: str) -> int:
+        p = self._slice_path(domain, date)
+        if not p.exists():
+            return 1
+        seq = 0
+        for line in p.read_text(encoding="utf-8").splitlines():
+            if line.strip():
+                seq += 1
+        return seq + 1
+
+    def _append(self, path: Path, doc: dict):
+        with open(path, "a", encoding="utf-8") as f:
+            f.write(json.dumps(doc, ensure_ascii=False) + "\n")
+
+    # ---- 建索引 ----
+    def _load_all(self) -> list[dict]:
+        docs = []
+        for p in self._docs.glob("*.jsonl"):
+            for line in p.read_text(encoding="utf-8").splitlines():
+                if line.strip():
+                    docs.append(json.loads(line))
+        return docs
+
+    def build_index(self):
+        all_docs = self._load_all()
+        cutoff = time.strftime("%Y-%m-%d", time.gmtime(time.time() - 365 * 86400))
+        current_docs = [d for d in all_docs if d.get("valid", True) and d.get("date", "") >= cutoff]
+        self._write_index(self._current, current_docs)
+        self._write_index(self._archive, all_docs)
+
+    def _write_index(self, index_dir: Path, docs: list[dict]):
+        terms: dict[str, dict[str, int]] = {}
+        for doc in docs:
+            text = " ".join([doc.get("title", ""), doc.get("content", "")])
+            for term in set(self._tokenize(text)):
+                postings = terms.setdefault(term, {})
+                postings[doc["id"]] = postings.get(doc["id"], 0) + 1
+        (index_dir / "index.json").write_text(
+            json.dumps({"terms": terms, "docs": docs}, ensure_ascii=False, indent=2)
+        )
+
+    # ---- 检索（BM25 简化：tf × idf）----
+    def search(self, query: str, top_k: int = 5) -> list[dict]:
+        data = self._load_index(self._current)
+        if not data:
+            return []
+        terms, docs = data["terms"], data["docs"]
+        doc_id_to_doc = {d["id"]: d for d in docs}
+        n = len(docs)
+        if n == 0:
+            return []
+        query_terms = self._tokenize(query)
+        if not query_terms:
+            return []
+        scores: dict[str, float] = {}
+        for term in set(query_terms):
+            postings = terms.get(term)
+            if not postings:
+                continue
+            df = len(postings)
+            idf = math.log(n / df)
+            for doc_id, tf in postings.items():
+                scores[doc_id] = scores.get(doc_id, 0.0) + tf * idf
+        ranked = sorted(scores.items(), key=lambda kv: kv[1], reverse=True)[:top_k]
+        result = []
+        for doc_id, score in ranked:
+            doc = doc_id_to_doc[doc_id]
+            result.append({
+                "title": doc.get("title", ""),
+                "url": doc.get("url", ""),
+                "date": doc.get("date", ""),
+                "content": doc.get("content", ""),
+                "domain": doc.get("domain", ""),
+                "score": round(score, 4),
+            })
+        return result
+
+    def _load_index(self, index_dir: Path) -> dict | None:
+        p = index_dir / "index.json"
+        if not p.exists():
+            return None
+        with open(p, encoding="utf-8") as f:
+            return json.load(f)
+
+    # ---- 新鲜度 ----
+    def _load_meta(self) -> dict:
+        if self._meta_path.exists():
+            with open(self._meta_path, encoding="utf-8") as f:
+                return json.load(f)
+        return {}
+
+    def _write_meta(self, meta: dict):
+        self._meta_path.write_text(json.dumps(meta, ensure_ascii=False, indent=2))
+
+    def is_stale(self) -> bool:
+        last = self._load_meta().get("last_refresh", 0)
+        return time.time() - last > self._refresh_interval_min * 60
+
+    def refresh(self):
+        self.build_index()
+        slices = sorted(p.name for p in self._docs.glob("*.jsonl"))
+        self._write_meta({
+            "last_refresh": time.time(),
+            "indexed_slices": slices,
+            "refresh_interval_min": self._refresh_interval_min,
+        })
+
+    def _doc_count(self) -> int:
+        return len(self._load_all())
