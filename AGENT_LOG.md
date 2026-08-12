@@ -511,3 +511,35 @@ data/checkpoints/<domain>.crash.json    特殊暂存 0/1
 - [ ] L2 爬虫输出 jsonl 归档/清理（低优先级）
 
 ---
+
+## 2026-08-13 会话十三：RAG 管理 Agent 真实验收 + DeepSeek key 统一
+
+### [人] 指令
+- 真实验收 RAG 管理 Agent 链路（教学式逐步）
+- 不硬编码路径（规则 1）
+- API key 统一用 opencode.json 里 DeepSeek 的 key
+
+### [AI+人] 真实验收结果（全部通过）
+| 步骤 | 结果 |
+|------|------|
+| 爬虫爬取 cs.nju.edu.cn | ✅ 7 文件 98 条（含 title/content/publishTime） |
+| 入库 RAG | ✅ 98 条，pending=98 |
+| rag-manager 赋有效时间 | ✅ 98/98，pending=0，effective_days:15 等 |
+| current/archive 索引 | ✅ current 9 条（有效），archive 98 条 |
+| RAG 检索 | ✅ 真实 query 命中带 URL |
+| query-agent 完整链路 | ✅ rag_search(query=计算机学院 通知)→回答，不触发爬虫 |
+
+### [AI] 关键点
+- **踩坑**：验证命令用空 query `search('')` 返回 []，误判为"无数据"——实为设计（空 query 无匹配）。数据实际正常。
+- **架构澄清**：query-agent 无 .env 时 resolve_rag_dir 兜底推导；.env 补齐后 RAG_DIR 生效。
+- **key 统一**：三 Agent .env 改为 DeepSeek（`api.deepseek.com/v1` + `DEEPSEEK_API_KEY` + `deepseek-v4-flash`），确认官方 API 模型 deepseek-v4-flash，无 TPM 限流。
+- **rag-manager 补 .env**（复制自 query-agent），保证独立可用。
+- .env 均 gitignore（key 安全）。
+
+### 待办
+- [ ] L2 爬虫 jsonl 归档/清理（低优先级）
+- [ ] R4 search 正文片段截取增强
+- [ ] 爬虫/策略 Agent 真实验收后针对性改进
+- [ ] 大作业工程收尾（WebUI 部署/CI/Docker/推送，见待办.md）
+
+---
