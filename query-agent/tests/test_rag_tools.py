@@ -1,6 +1,6 @@
 from unittest.mock import MagicMock
 
-from src.rag.ragstore import RAGStore
+from shared.rag.ragstore import RAGStore
 from src.tools.rag_tools import make_rag_tools
 
 

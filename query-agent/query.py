@@ -1,15 +1,24 @@
 # query.py
-"""query-agent 入口：装配 RAG 工具，复用 harness 主循环回答通知问题。"""
+"""query-agent 入口：管理 RAG 与爬虫，回答通知问题。
+
+职责链：用户问题 → rag_search 检索 RAG → 不足时 run_crawler 调爬虫
+→（爬虫无策略时委托内层策略 Agent）→ 数据入库 RAG → 再检索 → 回答。
+"""
 import os
 import sys
 from pathlib import Path
+
+# 把项目根加入 sys.path，使 shared/ 可导入（RAGStore 公共位置）
+_PROJ_ROOT = Path(__file__).resolve().parent.parent
+if str(_PROJ_ROOT) not in sys.path:
+    sys.path.insert(0, str(_PROJ_ROOT))
 
 from dotenv import load_dotenv
 
 from src.harness import Harness
 from src.agent_loop import AgentLoop
 from src.llm.client import LLMClient
-from src.rag.ragstore import RAGStore
+from shared.rag.ragstore import RAGStore
 
 
 def load_env():
@@ -24,7 +33,7 @@ def resolve_rag_dir() -> str:
     strategies_dir = os.environ.get("STRATEGIES_DIR", "")
     if strategies_dir:
         return str(Path(strategies_dir).resolve().parent / "rag")
-    return str(Path(__file__).resolve().parent.parent / "data" / "rag")
+    return str(_PROJ_ROOT / "data" / "rag")
 
 
 def answer(question: str, rag_dir: str | None = None) -> str:
@@ -33,7 +42,7 @@ def answer(question: str, rag_dir: str | None = None) -> str:
     if store.is_stale():
         store.refresh()
 
-    harness = Harness.from_yaml("agent.yaml", rag_store=store, entry="query")
+    harness = Harness.from_yaml("agent.yaml", rag_store=store)
     llm = LLMClient()
     loop = AgentLoop(harness, llm)
     return loop.run(f"用户问题: {question}\n请先从 RAG 检索，检索不到再考虑调用 run_crawler 补充。")

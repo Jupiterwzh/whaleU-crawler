@@ -2,7 +2,7 @@
   "meta": {
     "domain": "cs.nju.edu.cn",
     "siteName": "计算机学院",
-    "strategyVersion": 5,
+    "strategyVersion": 3,
     "created": "2026-08-03T00:00:00Z",
     "updated": "2026-08-03T00:00:00Z"
   },
@@ -14,8 +14,7 @@
       "paginationType": "listN",
       "paginationHint": "/1702/list{page}.htm",
       "estimatedCount": 84,
-      "totalPages": 6,
-      "pageSize": 14
+      "totalPages": 6
     },
     {
       "name": "研究生公告栏",
@@ -24,8 +23,7 @@
       "paginationType": "listN",
       "paginationHint": "/1703/list{page}.htm",
       "estimatedCount": 22,
-      "totalPages": 2,
-      "pageSize": 14
+      "totalPages": 2
     },
     {
       "name": "本科生公告栏",
@@ -34,8 +32,7 @@
       "paginationType": "listN",
       "paginationHint": "/1704/list{page}.htm",
       "estimatedCount": 31,
-      "totalPages": 3,
-      "pageSize": 14
+      "totalPages": 3
     },
     {
       "name": "获奖公告",
@@ -44,8 +41,7 @@
       "paginationType": "listN",
       "paginationHint": "/1705/list{page}.htm",
       "estimatedCount": 51,
-      "totalPages": 4,
-      "pageSize": 14
+      "totalPages": 4
     },
     {
       "name": "会议讲座信息",
@@ -54,19 +50,7 @@
       "paginationType": "listN",
       "paginationHint": "/1706/list{page}.htm",
       "estimatedCount": 487,
-      "totalPages": 35,
-      "pageSize": 14
-    },
-    {
-      "name": "就业信息栏",
-      "url": "https://cs.nju.edu.cn/1707/list.htm",
-      "type": "news_title",
-      "paginationType": "listN",
-      "paginationHint": "/1707/list{page}.htm",
-      "estimatedCount": 0,
-      "totalPages": 0,
-      "pageSize": 14,
-      "notes": "当前无数据（<!-- No Data -->），可能后续会更新"
+      "totalPages": 35
     },
     {
       "name": "学生活动",
@@ -75,9 +59,7 @@
       "paginationType": "listN",
       "paginationHint": "/xshd/list{page}.htm",
       "estimatedCount": 46,
-      "totalPages": 4,
-      "pageSize": 14,
-      "notes": "columnId=65918，与其他数字ID不同"
+      "totalPages": 4
     },
     {
       "name": "党的建设-通知公告",
@@ -86,8 +68,7 @@
       "paginationType": "listN",
       "paginationHint": "/1712/list{page}.htm",
       "estimatedCount": 21,
-      "totalPages": 2,
-      "pageSize": 14
+      "totalPages": 2
     },
     {
       "name": "新闻动态",
@@ -96,8 +77,7 @@
       "paginationType": "listN",
       "paginationHint": "/1660/list{page}.htm",
       "estimatedCount": 253,
-      "totalPages": 19,
-      "pageSize": 14
+      "totalPages": 19
     },
     {
       "name": "最新动态（汇总）",
@@ -106,9 +86,7 @@
       "paginationType": "listN",
       "paginationHint": "/1654/list{page}.htm",
       "estimatedCount": 37,
-      "totalPages": 3,
-      "pageSize": 14,
-      "notes": "这是'最新动态'栏目的汇总页，包含所有子栏目的混合内容"
+      "totalPages": 3
     }
   ],
   "pagination": {
@@ -126,9 +104,9 @@
     "titleAttr": "title",
     "linkSelector": "span.news_title a",
     "linkAttr": "href",
-    "dateSelector": "span.news_meta",
+    "dateSelector": "span.news_meta, span.news_meta",
     "dateFormat": "YYYY-MM-DD",
     "filterKeywords": []
   },
-  "notes": "计算机学院网站使用苏迪CMS（SudyCMS），所有列表页采用统一的分页模式：第一页为list.htm，后续页为list{page}.htm（如list2.htm）。每页固定14条记录。标题在span.news_title > a中（取title属性获取完整标题），日期在span.news_meta中。部分链接可能跳转到外部站点（如rczp.nju.edu.cn、mp.weixin.qq.com），需注意处理。就业信息栏(/1707/list.htm)当前无数据。学生活动(/xshd/list.htm)的columnId为65918，与其他数字ID不同。最新动态汇总页(/1654/list.htm)包含所有子栏目的混合内容，可能与子栏目内容重复。"
+  "notes": "计算机学院网站使用苏迪CMS，所有列表页采用统一的分页模式：第一页为list.htm，后续页为list{page}.htm（如list2.htm）。每页14条记录。标题在span.news_title > a中，日期在span.news_meta中。部分链接可能跳转到外部站点（如rczp.nju.edu.cn）。就业信息栏(/1707/list.htm)当前无数据。"
 }

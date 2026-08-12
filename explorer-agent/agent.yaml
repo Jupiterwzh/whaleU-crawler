@@ -27,16 +27,6 @@ tools:
       factory: "make_shell_tools"
       require_approval: true
 
-# query-agent 专用工具子集：只需检索 + 爬虫入库 + 读文件，不给 fetch_url/write_file
-query:
-  rules:
-    - path: "./rules/query_AGENTS.md"
-  tools:
-    builtin:
-      - name: "read_file"
-        module: "src.tools.file_tools"
-        factory: "make_file_tools"
-
 guardrail:
   policy: "./guardrails/policy.yaml"
 

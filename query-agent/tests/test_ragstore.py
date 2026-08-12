@@ -1,5 +1,5 @@
 import json
-from src.rag.ragstore import RAGStore
+from shared.rag.ragstore import RAGStore
 
 
 def test_ingest_and_search(tmp_path):

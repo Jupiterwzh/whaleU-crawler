@@ -1,0 +1,27 @@
+# guardrails/policy.yaml
+rules:
+  - pattern: "rm -rf"
+    action: deny
+    reason: "禁止递归删除"
+  - tools: ["run_shell"]
+    pattern: "sudo"
+    action: ask_user
+    reason: "sudo 操作需确认"
+  - tools: ["run_shell"]
+    pattern: "rm "
+    action: ask_user
+    reason: "删除操作需确认"
+  - tools: ["write_file"]
+    scope: "inside_strategies"
+    action: allow
+    reason: ""
+  - tools: ["write_file"]
+    scope: "outside_strategies"
+    action: ask_user
+    reason: "在策略目录外写文件需要确认"
+  - tools: ["read_file"]
+    scope: "outside_project"
+    action: ask_user
+    reason: "读取项目目录外的文件需要确认"
+  - tools: ["fetch_url", "read_file"]
+    action: allow

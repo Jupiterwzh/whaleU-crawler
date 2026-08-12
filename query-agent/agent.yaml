@@ -1,0 +1,27 @@
+agent:
+  name: "query-agent"
+  model: "${LLM_MODEL}"
+  max_steps: 30
+
+llm:
+  base_url: "${LLM_BASE_URL}"
+  api_key: "${LLM_API_KEY}"
+
+rules:
+  - path: "./rules/query_AGENTS.md"
+
+tools:
+  builtin:
+    - name: "read_file"
+      module: "src.tools.file_tools"
+      factory: "make_file_tools"
+
+guardrail:
+  policy: "./guardrails/policy.yaml"
+
+tracer:
+  output: "./traces/"
+
+paths:
+  crawler_script: "${CRAWLER_SCRIPT}"
+  rag_dir: "${RAG_DIR}"

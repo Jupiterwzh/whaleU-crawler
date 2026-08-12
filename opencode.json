@@ -6,19 +6,19 @@
   "skills": {
     "paths": ["./skills"]
   },
-  "model": "njusehub/glm-5.2",
+  "model": "deepseek/deepseek-v4-flash",
   "small_model": "cherryin/deepseek/deepseek-v4-flash(free)",
   "provider": {
-    "njusehub": {
-      "npm": "@ai-sdk/openai-compatible",
-      "name": "NJU SE Hub",
+    "deepseek": {
+      "npm": "@ai-sdk/anthropic",
+      "name": "DeepSeek",
       "options": {
-        "baseURL": "https://njusehub.info/v1",
-        "apiKey": "{env:NJUSEHUB_API_KEY}"
+        "baseURL": "https://api.deepseek.com/anthropic",
+        "apiKey": "{env:DEEPSEEK_API_KEY}"
       },
       "models": {
-        "glm-5.2": {
-          "name": "GLM 5.2"
+        "deepseek-v4-flash": {
+          "name": "DeepSeek-V4-Flash"
         }
       }
     },
