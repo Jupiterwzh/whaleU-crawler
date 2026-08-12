@@ -24,6 +24,7 @@
 | 08-06 | B4 工程收尾 | — | controller | `37d8f9f` | 用户选 Docker 分发 | 分发暴露运行环境隐式依赖 |
 | 08-12 | B5 冷启动+文档 | brainstorm + cold-start | explore agent + controller | `040c79c`~`<HEAD>` | 冷启动停 8 处 | spec"我以为写清楚"≠文字写清楚 |
 | 08-12 | B6 WebUI 单页表单 | TDD | controller | `webui.py` | 用户选表单式 | 复用 query.answer() 零新依赖 |
+| 08-12 | B7 query 工具子集修复 | TDD + systematic-debugging | controller | 会话九 | 真实验收暴露 fetch_url 误用 | query 入口须隔离 explorer 工具 |
 
 ---
 
@@ -406,5 +407,30 @@ data/checkpoints/<domain>.crash.json    特殊暂存 0/1
 - [ ] WebUI 部署（用户，需公网或内网可访问）
 - [ ] CI 实跑 + 末次 pass（用户 push GitLab）
 - [ ] Docker build 验证（用户，耗时命令）
+
+---
+
+## 2026-08-12 会话九：真实验收暴露问题 + query 工具子集修复
+
+### [人] 真实验收（webui.py + main.py）
+- webui.py 查询：RAG 空库 → rag_search 无匹配 → Agent **错误地用了 fetch_url** 手动抓网页，还想写策略文件（错误路径 /workspace/...，Guardrail 拦住）
+- main.py 备份管理：输入"简介该备份内容""退出管理""？""，"均不被识别（纯字符串匹配）
+
+### [AI] 根因分析（systematic-debugging）
+- **query-agent 装配了 explorer 全量工具**（fetch_url/write_file/run_shell）+ rag_search/run_crawler → Agent 倾向手动抓取而非调 run_crawler（后者 require_approval=True 且描述未强调是正确路径）
+- **备份管理交互**只支持"删除 N/启用 N/exit"，不支持"简介/列表"
+
+### [AI] 修复（commit `9e6d...`）
+- **agent.yaml 加 query 工具子集**：query 只用 read_file + rag_search + run_crawler，去掉 fetch_url/write_file/run_shell
+- **harness.py 加 entry 参数**：main 用 builtin 工具集，query 用 query.tools 子集，加载各自 rules
+- **rules/query_AGENTS.md**：明确"只有 rag_search/run_crawler/read_file，不要自己抓网页"
+- **备份管理**：加 list/简介 [N]/详情 [N] 命令，无法识别输入时提示可用命令
+- **pyproject.toml** 修 testpaths（explorer-agent/tests → tests）+ 补 keyring 依赖
+- **新增 test_query_harness.py**（2 测试：query 无 fetch_url、main 有 fetch_url）
+- 60 测试全过
+
+### 待办
+- [ ] 用户重新真实验收 query（应走 rag_search → run_crawler 而非 fetch_url）
+- [ ] RAG 检索能力增强 + 数据链路打通（用户确认"两者都要"）
 
 ---
