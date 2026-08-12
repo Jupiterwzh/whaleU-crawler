@@ -28,9 +28,9 @@ def _format_search_results(hits: list[dict]) -> str:
     lines = [f"命中 {len(hits)} 条："]
     for i, hit in enumerate(hits, 1):
         lines.append(f"{i}. [{hit.get('date', '')}] {hit.get('title', '')} ({hit.get('url', '')})")
-        content = (hit.get("content", "") or "").strip()
-        if content:
-            lines.append(f"   正文片段: {content[:100]}")
+        snippet = (hit.get("snippet") or hit.get("content") or "").strip()
+        if snippet:
+            lines.append(f"   正文片段: {snippet[:100]}")
     return "\n".join(lines)
 
 
