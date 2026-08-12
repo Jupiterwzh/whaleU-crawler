@@ -543,3 +543,29 @@ data/checkpoints/<domain>.crash.json    特殊暂存 0/1
 - [ ] 大作业工程收尾（WebUI 部署/CI/Docker/推送，见待办.md）
 
 ---
+
+## 2026-08-13 会话十四：自主完善循环（R4 片段截取 → L2 归档 → 反思）
+
+### [人] 指令
+- 用户临时有事，授权 AI 自主做几轮"完善→测试→反思"循环
+
+### [AI] 循环规划
+1. R4: search 返回命中片段（当前整段 content 可达 15 万字符）
+2. L2: 爬虫 jsonl 入库后归档（防越积越多）
+3. 反思 + 待办核对
+
+### [AI] 4 轮循环执行
+- **循环 1 R4**（commit）：`search()` 加 `snippet` 字段——命中 query 词前后 60 字片段；长内容从 15 万字符 → 74-80 字。测试 `test_search_returns_snippet` + `test_search_snippet_short_content`
+- **循环 2 L2**（commit）：`run_crawler` 入库后把 jsonl 归档到 `data/archive/`，避免 `_find_output_file` 重复扫描。测试 `test_run_crawler_archives_output`
+- **循环 3 反思改进**（commit）：`_format_search_results` 改用 snippet（之前底层实现了 snippet 但工具层没用上，暴露"底层能力不被上层消费"盲区）
+- **循环 4 B.2 测试**（commit）：`test_manager_pure_fn_fallback_no_llm`——不 mock `_llm_judge`，验证 judge_validity 纯函数兜底赋 valid_until=2026-03-15。**证明 rag-manager 无 LLM 也能确定性工作**（B.2 关键证据）
+
+### [AI] 反思
+- snippet 截取对回答质量实质提升，但 `content.find(term)` 定位首个命中词可能非语义中心——MVP 够用
+- "底层实现能力但上层不消费"是真实盲区（R4 的 snippet 一开始没接入 rag_search 工具）
+- B.2 确定性测试：纯函数兜底路径是核心证据，应确保每 Agent 都有此类测试
+
+### 测试总量
+- explorer 45 + query-agent 26 + rag-manager 3 = 74
+
+---
