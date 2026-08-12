@@ -1,0 +1,32 @@
+agent:
+  name: "rag-manager"
+  model: "${LLM_MODEL}"
+  max_steps: 30
+
+llm:
+  base_url: "${LLM_BASE_URL}"
+  api_key: "${LLM_API_KEY}"
+
+rules:
+  - path: "./rules/rag_manager_AGENTS.md"
+
+tools:
+  builtin:
+    - name: "read_rag_docs"
+      module: "src.tools.rag_manager_tools"
+      factory: "make_rag_manager_tools"
+    - name: "assign_validity"
+      module: "src.tools.rag_manager_tools"
+      factory: "make_rag_manager_tools"
+    - name: "rebuild_index"
+      module: "src.tools.rag_manager_tools"
+      factory: "make_rag_manager_tools"
+
+guardrail:
+  policy: "./guardrails/policy.yaml"
+
+tracer:
+  output: "./traces/"
+
+paths:
+  rag_dir: "${RAG_DIR}"
