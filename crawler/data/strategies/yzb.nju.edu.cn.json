@@ -1,0 +1,72 @@
+{
+  "meta": {
+    "domain": "yzb.nju.edu.cn",
+    "siteName": "南京大学研究生招生网",
+    "strategyVersion": 1,
+    "created": "2026-08-08T00:00:00Z",
+    "updated": "2026-08-08T00:00:00Z"
+  },
+  "entries": [
+    {
+      "name": "硕士最新通知",
+      "url": "https://yzb.nju.edu.cn/47863/list.htm",
+      "type": "news_title",
+      "paginationType": "listN",
+      "paginationHint": "/47863/list{page}.htm",
+      "estimatedCount": 139,
+      "totalPages": 10,
+      "pageSize": 14
+    },
+    {
+      "name": "博士最新通知",
+      "url": "https://yzb.nju.edu.cn/47865/list.htm",
+      "type": "news_title",
+      "paginationType": "listN",
+      "paginationHint": "/47865/list{page}.htm",
+      "estimatedCount": 103,
+      "totalPages": 8,
+      "pageSize": 14
+    },
+    {
+      "name": "夏令营推免-最新公告",
+      "url": "https://yzb.nju.edu.cn/zxgg/list.htm",
+      "type": "news_title",
+      "paginationType": "listN",
+      "paginationHint": "/zxgg/list{page}.htm",
+      "estimatedCount": 19,
+      "totalPages": 2,
+      "pageSize": 14,
+      "notes": "栏目columnId=47868，URL使用字母别名/zxgg；部分条目链接跳转微信公众号"
+    },
+    {
+      "name": "港澳台最新通知",
+      "url": "https://yzb.nju.edu.cn/47867/list.htm",
+      "type": "news_title",
+      "paginationType": "listN",
+      "paginationHint": "/47867/list{page}.htm",
+      "estimatedCount": 23,
+      "totalPages": 2,
+      "pageSize": 14
+    }
+  ],
+  "pagination": {
+    "type": "listN",
+    "baseUrl": "https://yzb.nju.edu.cn/47863/list.htm",
+    "pattern": "/{columnPath}list{page}.htm",
+    "firstPage": "list.htm",
+    "otherPages": "list{page}.htm",
+    "pageSize": 14
+  },
+  "extraction": {
+    "listContainer": "ul.news_list.list2",
+    "itemSelector": "li.news",
+    "titleSelector": "span.news_title a",
+    "titleAttr": "title",
+    "linkSelector": "span.news_title a",
+    "linkAttr": "href",
+    "dateSelector": "span.news_meta",
+    "dateFormat": "YYYY-MM-DD",
+    "filterKeywords": []
+  },
+  "notes": "南京大学研究生招生网（苏迪CMS，siteId=734）。通知列表页统一结构：ul.news_list.list2 > li.news > span.news_title > a（标题取title属性）+ span.news_meta（日期YYYY-MM-DD）。分页格式：第一页list.htm，后续页list{page}.htm（如list2.htm），每页14条，页码1~N（list1.htm与list.htm等价）。已验证4个有效入口：硕士最新通知(/47863, 139条/10页)、博士最新通知(/47865, 103条/8页)、夏令营/推免最新公告(/zxgg, 19条/2页)、港澳台最新通知(/47867, 23条/2页)。部分条目href为外部链接（如mp.weixin.qq.com微信公众号），需按相对/绝对链接分别处理。已剔除无效入口：信息公开-公示(/48335/list.htm)页面为'<!-- No Data -->'空页（公示内容实际发布在硕士/博士最新通知栏目中）；复试基本分数线(/48336)、往年报考录取统计(/48337)为静态资料类栏目，非滚动通知。简章目录栏目(/47862,/47864,/47866)内容与'最新通知'栏目存在大量重叠，且多为年度性文件，暂不作为通知入口。"
+}
