@@ -47,6 +47,21 @@
 | 边界 | 空库 → 返回空；同内容去重（dedup_hash） |
 | 错误处理 | 索引损坏 → 重建 |
 
+### 3.2b RAG 详细规约（冷启动验证后明确）
+
+以下语义为权威定义，供实现与测试对照：
+
+- **分片（slice）** = 一个 `docs/<domain>.<date>.jsonl` 文件，slice 标识 = `<domain>.<date>`。`meta.json` 的 `indexed_slices` 元素即此格式。缺 date 的记录统一归入 `docs/<domain>.none.jsonl`。
+- **分词**：中文连续字符做 **bigram**（相邻 2 字），单字本身不进索引（仅通过 bigram 出现）；ASCII 单词按 `\w+` 切分并**小写归一**；数字、URL、日期作为整词；无停用词表。示例：`"期末考试安排"` → `{期末,考试,试安,安排}`；`"CS 2026"` → `{cs, 2026}`。
+- **打分**：`score = Σ(命中 term 的 tf × idf)`，`tf` 为 term 在 doc 中的频次，`idf = ln(N / df)`，N 为索引文档总数。title 与 content 合并后统一分词计数。按 score 降序取 top_k。
+- **索引落盘**：`index/current/index.json` 与 `index/archive/index.json` 各一个文件，结构 `{"terms": {term: {doc_id: tf}}, "docs": [doc, ...]}`。
+- **current/archive 流转**：`build_index()` 全量重建两个索引——archive 含全部文档；current 只含 `valid` 非 False 且 `date >= 今天-365天` 的文档。**仅 current 参与 `search()`**；archive 供未来历史检索/统计，本次不暴露查询入口。
+- **dedup_hash**：由 RAGStore 在 `ingest()` 内计算，`sha256(url + "|" + title)`。record 自带 dedup_hash 则沿用；重复（全库已存在相同 hash）**丢弃**（不计入返回的 added 数）。
+- **crawler→RAG 归一化**：归 `ingest()` 负责。输入即 crawler 原生 schema（`title/url/publishTime|date/content/...`），ingest 内映射为文档 schema：`date` 从 `publishTime` 或 `date` 提取（正则 `\d{4}-\d{2}-\d{2}`）；`domain` 从 url 取 netloc；`content` 缺省时用 `title + " " + url` 兜底。
+- **首启行为**：`meta.json` 不存在时 `is_stale()` 返回 **True**（需刷新）；首次 `refresh()` 全量索引所有分片并写 meta。
+- **id 生成**：`<domain>.<date>.<序号>`（分片内递增）。`valid` 字段：record 未提供时默认 True。
+- **返回 schema**：`search()` 每条返回 `{title, url, date, content, domain, score}`（无 doc_id 字段，doc_id 仅索引内部使用）。
+
 ### 3.3 crawler（已有，微调）
 
 | 项 | 内容 |

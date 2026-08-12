@@ -64,11 +64,20 @@
 
 **Interfaces:**
 - Produces: `RAGStore(base_dir, refresh_interval_min=30)` with methods:
-  - `ingest(records: list[dict])` — 追加到 docs 分片，去重
+  - `ingest(records: list[dict]) -> int` — 追加到 docs 分片，归一化 + 去重，返回新增数
   - `build_index(slice_filter=None)` — 建/重建倒排索引（current/archive）
-  - `search(query: str, top_k: int = 5) -> list[dict]` — 检索
-  - `is_stale() -> bool` — 距上次刷新 > interval
-  - `refresh()` — 增量索引新分片 + 更新 meta
+  - `search(query: str, top_k: int = 5) -> list[dict]` — 检索，返回 `{title,url,date,content,domain,score}`
+  - `is_stale() -> bool` — 距上次刷新 > interval；meta 缺失返回 True
+  - `refresh()` — 全量重建索引 + 更新 meta
+
+**权威语义:** 见 SPEC §3.2b（分词/打分/索引格式/slice/dedup/归一化/首启/current-archive/返回schema 全部定义在此，实现与测试必须符合）
+
+**验证步骤（含失败测试判据）:**
+- 空库 `search()` 返回 `[]`
+- `ingest` 后 `build_index()` 再 `search` 能命中
+- 重复 dedup_hash 只保留一条（`_doc_count()==1`）
+- `is_stale()`：fresh 后 False；meta 缺失时 True
+- 索引重建（`refresh()`）后仍可检索
 
 - [x] 完成（commit `8ea830a`）：RAGStore 全实现，4 测试通过
 
