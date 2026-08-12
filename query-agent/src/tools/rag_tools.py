@@ -2,6 +2,7 @@
 import json
 import re
 import subprocess
+import sys
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -68,6 +69,21 @@ def _find_output_file(stdout: str, crawler_script: str) -> Path | None:
     return candidates[0] if candidates else None
 
 
+def _trigger_rag_manager(rag_store):
+    """入库后触发 rag-manager 跑一轮：分配有效时间并重建索引。"""
+    _add_rag_manager_path()
+    from rag_manager import RagManager
+
+    RagManager(rag_store).run()
+
+
+def _add_rag_manager_path() -> None:
+    """把 rag-manager/ 目录加入 sys.path，使 rag_manager 包可导入。"""
+    _RAG_MANAGER_DIR = Path(__file__).resolve().parent.parent.parent.parent / "rag-manager"
+    if str(_RAG_MANAGER_DIR) not in sys.path:
+        sys.path.insert(0, str(_RAG_MANAGER_DIR))
+
+
 def make_rag_tools(rag_store, crawler_script: str) -> list[Tool]:
     """装配 query-agent 的两个工具：rag_search 与 run_crawler。"""
 
@@ -85,7 +101,9 @@ def make_rag_tools(rag_store, crawler_script: str) -> list[Tool]:
                 return f"爬虫失败: 退出码 {proc.returncode}，{proc.stderr.strip()[:200]}"
             out_path = _find_output_file(proc.stdout, crawler_script)
             records = _to_ingest_records(out_path, fallback_domain=_domain_of(url)) if out_path else []
-            rag_store.ingest(records)
+            added = rag_store.ingest(records)
+            if added > 0:
+                _trigger_rag_manager(rag_store)
             rag_store.refresh()
             return f"已抓取 {len(records)} 条并入库 RAG，来源 {url}"
         except (FileNotFoundError, subprocess.SubprocessError, OSError, ValueError) as e:
