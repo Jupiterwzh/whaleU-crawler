@@ -69,6 +69,19 @@ def _find_output_file(stdout: str, crawler_script: str) -> Path | None:
     return candidates[0] if candidates else None
 
 
+def _archive_output(out_path: Path | None):
+    """把已入库的爬虫输出移动到 data/archive/，避免下次被重复扫描。"""
+    if not out_path or not out_path.exists():
+        return
+    arch_dir = out_path.parent / "archive"
+    arch_dir.mkdir(parents=True, exist_ok=True)
+    dest = arch_dir / out_path.name
+    try:
+        out_path.rename(dest)
+    except OSError:
+        pass
+
+
 def _trigger_rag_manager(rag_store):
     """入库后触发 rag-manager 跑一轮：分配有效时间并重建索引。"""
     _add_rag_manager_path()
@@ -105,6 +118,7 @@ def make_rag_tools(rag_store, crawler_script: str) -> list[Tool]:
             if added > 0:
                 _trigger_rag_manager(rag_store)
             rag_store.refresh()
+            _archive_output(out_path)
             return f"已抓取 {len(records)} 条并入库 RAG，来源 {url}"
         except (FileNotFoundError, subprocess.SubprocessError, OSError, ValueError) as e:
             return f"爬虫失败: {e}"

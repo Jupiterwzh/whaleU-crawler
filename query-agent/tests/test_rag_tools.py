@@ -48,3 +48,27 @@ def test_run_crawler_triggers_rag_manager(tmp_path, monkeypatch):
          patch("src.tools.rag_tools._trigger_rag_manager") as mock_trigger:
         tool.handler(url="https://cs.nju.edu.cn/")
     mock_trigger.assert_called_once()
+
+
+def test_run_crawler_archives_output(tmp_path, monkeypatch):
+    """L2: run_crawler 入库后把爬虫输出归档到 data/archive/。"""
+    from unittest.mock import MagicMock, patch
+    from shared.rag.ragstore import RAGStore
+    from src.tools.rag_tools import make_rag_tools
+
+    store = RAGStore(str(tmp_path))
+    tools = make_rag_tools(store, "node")
+
+    fake_out = tmp_path / "notices_123.jsonl"
+    fake_out.write_text('{"title":"t","url":"u","publishTime":"2026-03-01"}\n')
+
+    arch_dir = tmp_path / "archive"
+    with patch("subprocess.run", return_value=MagicMock(
+            stdout=f"保存到: {fake_out}", returncode=0, stderr="")), \
+         patch("src.tools.rag_tools._trigger_rag_manager"):
+        tool = [t for t in tools if t.name == "run_crawler"][0]
+        tool.handler(url="https://cs.nju.edu.cn/")
+    # 归档目录应存在且包含移动后的文件
+    assert arch_dir.exists()
+    assert list(arch_dir.glob("notices_*.jsonl"))
+    assert not fake_out.exists()
