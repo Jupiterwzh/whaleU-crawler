@@ -704,4 +704,15 @@ data/checkpoints/<domain>.crash.json    特殊暂存 0/1
 ### [AI] 待决定（待办.md，完成后补问）
 - 爬虫是否加 `crawlStructure(url)` 确定性辅助（Agent 自己 LLM 判断页面类型易错费 token；爬虫复用 extractInternalLinks+isNotificationListPage 更可靠）——较大改动，待用户确认方向
 
+### [AI] crawl_structure 工具完成（策略 Agent 内）
+- 用户确认：结构遍历放**策略 Agent 内**（`explorer-agent/src/tools/structure_tools.py`），不放爬虫（爬虫只管按策略抓数据）
+- `crawl_structure(url, max_depth=4, max_links=30)`：Python BFS 遍历，确定性返回结构树 JSON
+  - visited 规范化去重防循环、domain 白名单（外链停止）、页面分类（list/middle/detail/other/error）
+  - 根页（depth 0）即使判为 list 也递归（首页兼导航）
+  - Tool handler 返回 JSON 字符串（Agent 友好）
+- 装配进 agent.yaml（策略 Agent 工具集：fetch_url/crawl_structure/read_file/write_file/run_shell）
+- 测试 6 个（normalize/classify/BFS/external-stop/tool-JSON），explorer 59 全过
+- 真实遍历 cs.nju.edu.cn：29 节点，识别出列表页（1712/1657/1709/1704/1711 等）
+- **分类精度待调优**：部分带 list 后缀的页面判为 middle（如 /1716/list.htm）——--verify 兜底验证最终入口，精度可后续用真实数据调
+
 ---
