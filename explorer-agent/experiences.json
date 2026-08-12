@@ -1,12 +1,25 @@
 {
   "cmsPatterns": [
-    {"cms": "苏迪CMS", "signature": "news_title + news_meta 数量匹配", "entryRegex": "/\\d+/list.htm"}
+    {
+      "cms": "苏迪CMS",
+      "signature": "news_title + news_meta 数量匹配",
+      "entryRegex": "/\\d+/list.htm"
+    }
   ],
   "pitfalls": [
-    {"desc": "维护页（HTTP 483/网络维护标题）", "action": "识别为不可爬，从入口剔除"},
-    {"desc": "首页通知可能是公众号外链（mp.weixin.qq.com）", "action": "区分站内 vs 外链"}
+    {
+      "desc": "维护页（HTTP 483/网络维护标题）",
+      "action": "识别为不可爬，从入口剔除"
+    },
+    {
+      "desc": "首页通知可能是公众号外链（mp.weixin.qq.com）",
+      "action": "区分站内 vs 外链"
+    }
   ],
   "deptTypes": [
-    {"type": "教务处/研究生院/学院", "note": "多为苏迪 CMS，news_title 结构"}
+    {
+      "type": "教务处/研究生院/学院",
+      "note": "多为苏迪 CMS，news_title 结构"
+    }
   ]
 }
