@@ -642,3 +642,25 @@ data/checkpoints/<domain>.crash.json    特殊暂存 0/1
 - [ ] hr/tzb/grawww 批量生成策略
 
 ---
+
+## 2026-08-13 会话十六：策略 Agent 经验库（跨站点通用规律）
+
+### [人] 需求澄清
+- 每站有确认策略后不重复探索；经验库应是**聚合通用规律**（CMS 识别/踩坑/部门类型），非逐站明细
+- 经验写入**人工确认**
+
+### [AI] brainstorm + plan
+- 经验库形态：`explorer-agent/experiences.json`（通用规律）+ `src/experience.py`
+- 每次探索 `load_experiences() → to_context()` 注入 goal；探索后 agent_loop 问是否存经验
+- plan `2026-08-13-experience-library.md`（3 task）
+
+### [AI] SDD 实现
+- **Task 1** experience.py（commit `380f2d5`）：load/save/to_context/default_experiences + 种子数据。subagent 解决 brief 内部冲突（default 返回空、种子在 json），load 读到苏迪CMS 规律，4/4 测试
+- **Task 2** main 注入 + agent_loop 确认（commit `721a6e6`）：goal 注入经验文本；探索确认后问"是否存经验"。MVP：保留现有数据不提取新规律。12 测试
+- **Task 3** rules + 文档（本会话）：rules 加"沉淀经验草案"；AGENT_LOG + 待办
+
+### 待确认（待办.md）
+- [ ] 经验 MVP 简化：确认交互有，但"自动提取本次新规律"未做，是否后续完善
+- [ ] 爬虫外链甄别、ndwy VPN、域名异常
+
+---
