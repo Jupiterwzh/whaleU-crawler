@@ -692,6 +692,52 @@ async function crawlNotices(listUrl, opts = {}) {
   return { notices: allNotices, saved, savePath };
 }
 
+/**
+ * 验证策略的每个入口是否可爬取的通知列表页。
+ * 对每 entry URL 实测抓取，用 isNotificationListPage 判定，返回结构化报告。
+ * 供策略 Agent 生成后自检、据反馈修正。
+ * @param {string} strategyPath - 策略 JSON 文件路径
+ * @returns {string} 验证报告文本
+ */
+async function verifyStrategy(strategyPath) {
+  const fs = require('fs');
+  let strategy;
+  try {
+    strategy = JSON.parse(fs.readFileSync(strategyPath, 'utf8'));
+  } catch (e) {
+    return `❌ 无法读取策略 ${strategyPath}: ${e.message}`;
+  }
+
+  const entries = strategy.entries || [];
+  if (entries.length === 0) return '⚠️ 策略无 entries';
+
+  const lines = [`=== 策略验证报告: ${strategy.meta?.domain || strategyPath} ===`];
+  let okCount = 0;
+
+  for (const entry of entries) {
+    const url = entry.url;
+    const name = entry.name || url;
+    try {
+      const html = await httpGet(url, 15000);
+      const type = entry.type;
+      const isList = isNotificationListPage(html, type);
+      const notices = extractNotices(html, url);
+      if (isList) {
+        okCount++;
+        lines.push(`✅ ${name}: 列表页 ✓ (发现 ${notices.length} 条, type=${type})`);
+      } else {
+        const title = (html.match(/<title>([^<]*)<\/title>/i) || [])[1] || '';
+        lines.push(`⚠️ ${name}: 非列表页 (title="${(title||'').slice(0,30)}", notices=${notices.length})`);
+      }
+    } catch (e) {
+      lines.push(`❌ ${name}: 抓取失败 (${e.message})`);
+    }
+  }
+
+  lines.push(`\n结果: ${okCount}/${entries.length} 入口可爬取`);
+  return lines.join('\n');
+}
+
 // ============================================================
 // 全站自动发现爬取
 // ============================================================
@@ -1231,6 +1277,15 @@ async function main() {
     return;
   }
 
+  // --verify <策略JSON路径>  验证策略的每个入口是否为可爬取的通知列表页
+  const verifyIdx = args.indexOf('--verify');
+  if (verifyIdx !== -1 && args[verifyIdx + 1]) {
+    const strategyPath = args[verifyIdx + 1];
+    const report = await verifyStrategy(strategyPath);
+    console.log(report);
+    return;
+  }
+
   // --notices <URL>  爬取通知列表
   if (noticesIdx !== -1 && args[noticesIdx + 1]) {
     const listUrl = args[noticesIdx + 1];
@@ -1318,7 +1373,8 @@ if (require.main === module) {
 }
 
 module.exports = {
-  crawlOne, crawlNotices,
+  crawlOne, crawlNotices, verifyStrategy,
   httpGet, extractNotices, extractArticle,
+  isNotificationListPage,
   buildRecord, saveJSONL, countRecords, DATA_DIR,
 };

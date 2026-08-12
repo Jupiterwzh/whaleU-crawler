@@ -569,3 +569,36 @@ data/checkpoints/<domain>.crash.json    特殊暂存 0/1
 - explorer 45 + query-agent 26 + rag-manager 3 = 74
 
 ---
+
+## 2026-08-13 会话十五：爬虫 + 策略 Agent 改进（反馈闭环）
+
+### [人] 问题
+- Agent 仅凭已有知识判断入口，无反馈改进、无自我总结、无示例
+- 不确定特殊网页能否爬取（如 ndwy.nju.edu.cn）
+- 授权 AI 自己测试并修改爬虫
+
+### [AI] 诊断
+- **ndwy.nju.edu.cn 测试**：HTTP 483 + "网络维护"页（urllib 和 Node 同款）——站点服务器端返回维护页，非爬虫 bug
+- **核心缺口**：策略 Agent 生成入口"凭知识猜"，从不实测验证；爬虫有 `isNotificationListPage` 判断能力但 Agent 不用
+- **反馈闭环缺失**：Agent → 爬虫单向，爬虫实测结果不回流修正策略
+
+### [AI] 改进设计
+- 爬虫加 `--verify <策略>` 模式：对每 entry 实测抓取，用 isNotificationListPage 判定是否真为列表页，返回报告（成功 N 条/非列表页/失败）
+- 策略 Agent rules 加"生成后必须 --verify 验证，据报告修正"
+
+### [AI] 待实现
+- [ ] 爬虫 --verify 模式
+- [ ] 策略 Agent rules 验证指令
+- [ ] ndwy 维护页识别（非通知页反馈）
+
+### [AI] 爬虫 --verify 模式完成
+- collector.js 加 `verifyStrategy()` + `--verify <策略路径>` CLI
+- 实测 cs.nju.edu.cn 策略：**9/10 入口可爬取，就业信息栏非列表页（notices=0）**——证明"凭知识猜入口"不可靠，反馈闭环必要
+- ndwy.nju.edu.cn 测试：HTTP 483 维护页（服务器端返回，非爬虫 bug）
+
+### [AI] 待办
+- [ ] 策略 Agent rules 加"生成后必须 --verify"指令
+- [ ] Agent 据 verify 报告修正策略的闭环流程
+- [ ] 就业信息栏等无效入口处理（Agent 应剔除）
+
+---

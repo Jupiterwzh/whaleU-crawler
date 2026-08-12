@@ -8,8 +8,12 @@ unit-test:
   before_script:
     - pip install -r explorer-agent/requirements.txt
     - pip install -r query-agent/requirements.txt
+    - pip install -r rag-manager/requirements.txt
+    - curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && apt-get install -y nodejs
   script:
     - cd explorer-agent && python -m pytest -q
     - cd ../query-agent && python -m pytest -q
+    - cd ../rag-manager && python -m pytest -q
+    - cd ../crawler && node --test test/collector.test.js
   rules:
     - if: '$CI_PIPELINE_SOURCE == "push"'

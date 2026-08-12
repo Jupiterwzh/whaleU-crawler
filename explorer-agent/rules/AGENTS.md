@@ -4,6 +4,11 @@
 - 优先用 fetch_url 抓取页面，分析 HTML 后用 write_file 保存策略 JSON。
 - 策略 JSON 必须含 meta/entries/pagination/extraction/notes 字段，entries 每项含 name/url/type/paginationType。
 - 不确定时多抓几个候选子页验证，不要猜测。
+- **生成策略后必须验证**：用 `run_shell` 执行 `node <CRAWLER_SCRIPT> --verify <策略路径>` 实测每个入口是否真能爬到通知。据验证报告修正：
+  - 非列表页（notices=0 或"非列表页"）→ 从 entries 剔除，或换用该页实际可爬的入口
+  - 抓取失败 → 标注原因，评估是否保留
+  - 验证通过 → 保留
+- **自我总结**：验证后若发现无效入口，在 notes 里写明"该入口为什么无效、用了什么替代"，供下次探索参考。
 - 完成后停止（不再调用工具即表示 done）。
 - 回复简洁，中文。
 - 完成探索后输出以下三部分：
