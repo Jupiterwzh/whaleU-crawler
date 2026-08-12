@@ -19,4 +19,4 @@ RUN pip install --no-cache-dir -r /app/explorer-agent/requirements.txt
 COPY . /app
 
 # 入口命令：默认 query；可用 whale-key 管理凭据
-ENTRYPOINT ["python", "explorer-agent/query.py"]
+ENTRYPOINT ["python", "query-agent/query.py"]

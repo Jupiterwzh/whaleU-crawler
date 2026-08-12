@@ -7,25 +7,30 @@
 | 部分 | 目录 | 语言 | 职责 |
 |------|------|------|------|
 | 爬虫 | `crawler/` | JavaScript | 按策略爬取网页、提取通知、存储 JSONL |
-| 策略 Agent | `explorer-agent/` | Python | 三段式探索：前导检查→Agent 生成→后导保存 |
-| 查询 Agent | `explorer-agent/query.py` | Python | 复用 harness，RAG 检索→不够则调爬虫补充→回答 |
-| RAG 存储 | `explorer-agent/src/rag/` | Python | JSONL 文档库 + 倒排索引（current/archive） |
+| 策略 Agent（内层） | `explorer-agent/` | Python | 探索网站、生成/管理爬取策略 |
+| 查询 Agent（外层） | `query-agent/` | Python | 管理 RAG 与爬虫：检索回答、不足则调爬虫补充 |
+| RAG 存储（公共） | `shared/rag/` | Python | JSONL 文档库 + 倒排索引（current/archive） |
 
 ```
 whaleU-crawler/
 ├── crawler/                  # JS 爬虫（执行者）
 │   └── src/collectors/collector.js
-├── explorer-agent/           # Python Agent（Harness Engineering）
+├── explorer-agent/           # 内层策略 Agent（独立 harness）
 │   ├── main.py               # 策略 Agent 入口（三段式）
-│   ├── query.py              # 查询 Agent 入口
 │   ├── src/{harness,agent_loop,llm,tools,guardrail,tracer,filestore,preflight,postflight,keys}
-│   ├── src/rag/              # RAGStore（docs + 倒排索引）
 │   ├── rules/AGENTS.md       # Agent 行为规则
 │   ├── guardrails/           # 安全门控策略
 │   └── SPEC.md / PLAN.md / SPEC_PROCESS.md / REFLECTION.md   # 大作业交付物
+├── query-agent/              # 外层查询 Agent（独立 harness，真复制内核）
+│   ├── query.py              # 查询 Agent 入口
+│   ├── webui.py              # 单页表单 WebUI（http://localhost:8000）
+│   ├── src/{harness,agent_loop,llm,tools,guardrail,tracer,keys}
+│   ├── rules/query_AGENTS.md # 查询 Agent 规则
+│   └── SPEC.md               # 外层 Agent 设计
+├── shared/rag/               # RAGStore（公共位置）
 ├── data/                     # FileStore 目录（策略/备份/暂存/crash，从 STRATEGIES_DIR 推导）
 ├── Dockerfile / .gitlab-ci.yml / Makefile
-├── AGENTS.md / AGENT_LOG.md / README.md
+├── AGENTS.md / AGENT_LOG.md / README.md / 待办.md
 └── opencode.json
 ```
 
@@ -39,14 +44,14 @@ python -m src.keys set    # 引导隐藏录入 key → 存入系统钥匙串
 # 或用环境变量：export LLM_API_KEY=$CHERRYIN_API_KEY
 ```
 
-### 2. 查询通知（查询 Agent）
+### 2. 查询通知（外层查询 Agent）
 
 ```bash
-cd explorer-agent
+cd query-agent
 python query.py "计算机学院最近有什么通知"
 ```
 
-### 3. 生成/更新策略（策略 Agent）
+### 3. 生成/更新策略（内层策略 Agent）
 
 ```bash
 cd explorer-agent
@@ -70,7 +75,7 @@ make test    # 或 cd explorer-agent && python -m pytest -q
 
 - **模式 A（爬虫入口）**：`node collector.js --site <url>` 无策略 → 自动调策略 Agent → 继续爬取。
 - **模式 B（策略 Agent 入口）**：`python main.py "探索 X"` → 前导检查 → Agent 生成 → 交互确认 → 后导保存。
-- **模式 C（查询 Agent 入口）**：`python query.py "问题"` → RAG 检索 → 不够则调爬虫补充入库 → 回答。
+- **模式 C（查询 Agent 入口）**：`cd query-agent && python query.py "问题"` → RAG 检索 → 不够则调爬虫补充入库 → 回答。
 
 ## 分发（Docker）
 

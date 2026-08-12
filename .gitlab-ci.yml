@@ -7,7 +7,9 @@ unit-test:
   image: python:3.11
   before_script:
     - pip install -r explorer-agent/requirements.txt
+    - pip install -r query-agent/requirements.txt
   script:
     - cd explorer-agent && python -m pytest -q
+    - cd ../query-agent && python -m pytest -q
   rules:
     - if: '$CI_PIPELINE_SOURCE == "push"'
