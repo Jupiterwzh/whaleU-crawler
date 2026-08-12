@@ -1,9 +1,10 @@
-"""RAGStore：JSONL 文档库 + 倒排索引 + 新鲜度刷新（纯标准库）。"""
+"""RAGStore：JSONL 文档库 + 倒排索引 + 新鲜度刷新 + 有效时间管理（纯标准库）。"""
 import hashlib
 import json
 import math
 import re
 import time
+from datetime import date as _date, timedelta
 from pathlib import Path
 
 _CJK = r"[\u4e00-\u9fff]"
@@ -110,9 +111,28 @@ class RAGStore:
     def build_index(self):
         all_docs = self._load_all()
         cutoff = time.strftime("%Y-%m-%d", time.gmtime(time.time() - 365 * 86400))
-        current_docs = [d for d in all_docs if d.get("valid", True) and d.get("date", "") >= cutoff]
+        current_docs = [
+            d for d in all_docs
+            if d.get("valid", True)
+            and d.get("date", "") >= cutoff
+            and self._is_valid(d)
+        ]
         self._write_index(self._current, current_docs)
         self._write_index(self._archive, all_docs)
+
+    @staticmethod
+    def _is_valid(doc: dict) -> bool:
+        """有效时间判定：valid_until > 今天；否则 valid_from + effective_days > 今天。无有效时间信息则默认有效。"""
+        today = time.strftime("%Y-%m-%d", time.gmtime())
+        valid_until = doc.get("valid_until") or ""
+        if valid_until:
+            return valid_until > today
+        valid_from = doc.get("valid_from") or doc.get("date") or ""
+        days = doc.get("effective_days")
+        if valid_from and days:
+            until = (_date.fromisoformat(valid_from) + timedelta(days=int(days))).isoformat()
+            return until > today
+        return True
 
     def _write_index(self, index_dir: Path, docs: list[dict]):
         terms: dict[str, dict[str, int]] = {}
@@ -126,8 +146,10 @@ class RAGStore:
         )
 
     # ---- 检索（BM25 简化：tf × idf）----
-    def search(self, query: str, top_k: int = 5) -> list[dict]:
-        data = self._load_index(self._current)
+    def search(self, query: str, top_k: int = 5, date_from: str = None,
+               date_to: str = None, domain: str = None, scope: str = "current") -> list[dict]:
+        index_dir = self._current if scope == "current" else self._archive
+        data = self._load_index(index_dir)
         if not data:
             return []
         terms, docs = data["terms"], data["docs"]
@@ -151,15 +173,61 @@ class RAGStore:
         result = []
         for doc_id, score in ranked:
             doc = doc_id_to_doc[doc_id]
+            d = doc.get("date", "")
+            dom = doc.get("domain", "")
+            if domain and dom != domain:
+                continue
+            if date_from and d < date_from:
+                continue
+            if date_to and d > date_to:
+                continue
             result.append({
                 "title": doc.get("title", ""),
                 "url": doc.get("url", ""),
-                "date": doc.get("date", ""),
+                "date": d,
                 "content": doc.get("content", ""),
-                "domain": doc.get("domain", ""),
+                "domain": dom,
                 "score": round(score, 4),
             })
         return result
+
+    def pending_validity(self) -> list[dict]:
+        """返回缺有效时间字段的文档。"""
+        out = []
+        for p in self._docs.glob("*.jsonl"):
+            for line in p.read_text(encoding="utf-8").splitlines():
+                if not line.strip():
+                    continue
+                doc = json.loads(line)
+                if not doc.get("valid_until") and not doc.get("effective_days"):
+                    out.append(doc)
+        return out
+
+    def apply_validity(self, doc_id: str, valid_from: str = None,
+                       valid_until: str = None, effective_days: int = None) -> bool:
+        """按 doc_id 找到文档所在分片，重写该行的有效时间字段。"""
+        for p in self._docs.glob("*.jsonl"):
+            lines = p.read_text(encoding="utf-8").splitlines()
+            found = False
+            new_lines = []
+            for line in lines:
+                if not line.strip():
+                    new_lines.append(line)
+                    continue
+                doc = json.loads(line)
+                if doc.get("id") == doc_id:
+                    if valid_from:
+                        doc["valid_from"] = valid_from
+                    if valid_until:
+                        doc["valid_until"] = valid_until
+                    if effective_days:
+                        doc["effective_days"] = effective_days
+                    found = True
+                new_lines.append(json.dumps(doc, ensure_ascii=False))
+            if found:
+                p.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
+                return True
+        return False
 
     def _load_index(self, index_dir: Path) -> dict | None:
         p = index_dir / "index.json"
