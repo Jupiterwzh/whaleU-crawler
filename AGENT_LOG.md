@@ -663,4 +663,11 @@ data/checkpoints/<domain>.crash.json    特殊暂存 0/1
 - [ ] 经验 MVP 简化：确认交互有，但"自动提取本次新规律"未做，是否后续完善
 - [ ] 爬虫外链甄别、ndwy VPN、域名异常
 
+### [AI] 经验库完善（自动提取 + 合并）
+- **experience.py 加 `merge_from_text(data, text)`**：提取 Agent 输出 `【经验草案】` JSON，按分类去重合并（cmsPatterns 按 cms、pitfalls 按 desc、deptTypes 按 type）
+- **agent_loop `_ask_experience_confirm(text)`**：y 时真正合并（非空操作），无新规律则提示"经验库未变"
+- **rules**：Agent 输出末尾追加 `【经验草案】` JSON 段格式
+- 测试：4 新 merge 测试，explorer 54 全过
+- 真实验证：yzb 经验草案合并成功（苏迪CMS 去重、就业信息栏踩坑新增）
+
 ---

@@ -52,3 +52,38 @@ def test_main_injects_experience_context(tmp_path, monkeypatch, capsys):
         main.main()
     goal = fake.run.call_args[0][0]
     assert "苏迪CMS" in goal or "通用规律" in goal
+
+
+def test_merge_from_text_appends(tmp_path):
+    """从 Agent 输出的经验草案提取并合并到经验库。"""
+    from src.experience import merge_from_text
+    data = {"cmsPatterns": [], "pitfalls": [], "deptTypes": []}
+    text = """
+探索完成。
+
+【经验草案】
+{"cmsPatterns":[{"cms":"苏迪CMS","signature":"news_title+news_meta","entryRegex":"/\\\\d+/list.htm"}],
+ "pitfalls":[{"desc":"就业信息栏不是列表页","action":"验证后剔除"}]}
+"""
+    out = merge_from_text(data, text)
+    assert len(out["cmsPatterns"]) == 1
+    assert out["cmsPatterns"][0]["cms"] == "苏迪CMS"
+    assert len(out["pitfalls"]) == 1
+    assert out["pitfalls"][0]["desc"] == "就业信息栏不是列表页"
+
+
+def test_merge_from_text_dedup(tmp_path):
+    """重复规律不重复追加。"""
+    from src.experience import merge_from_text
+    data = {"cmsPatterns": [{"cms": "苏迪CMS", "signature": "a", "entryRegex": "b"}], "pitfalls": [], "deptTypes": []}
+    text = "【经验草案】\n{\"cmsPatterns\":[{\"cms\":\"苏迪CMS\",\"signature\":\"a\",\"entryRegex\":\"b\"}]}"
+    out = merge_from_text(data, text)
+    assert len(out["cmsPatterns"]) == 1  # 已存在，不重复
+
+
+def test_merge_from_text_no_draft(tmp_path):
+    """无经验草案时不改动。"""
+    from src.experience import merge_from_text
+    data = {"cmsPatterns": [], "pitfalls": [], "deptTypes": []}
+    out = merge_from_text(data, "探索完成，无特殊规律。")
+    assert out["cmsPatterns"] == []

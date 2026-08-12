@@ -6,15 +6,19 @@ from datetime import datetime
 from .llm.client import LLMClient
 
 
-def _ask_experience_confirm():
-    """探索确认后询问是否沉淀经验（失败不影响主流程）。"""
+def _ask_experience_confirm(text: str):
+    """探索确认后询问是否沉淀经验，y 则把 Agent 的经验草案合并进经验库（失败不影响主流程）。"""
     try:
-        from src.experience import load_experiences, save_experiences
+        from src.experience import load_experiences, save_experiences, merge_from_text
         exp_ans = input("是否将本次发现的通用规律存入经验库？（y/否）: ").strip().lower()
         if exp_ans in ("y", "yes"):
             data = load_experiences()
-            save_experiences(data)
-            print("经验已更新")
+            updated = merge_from_text(data, text or "")
+            if updated != data:
+                save_experiences(updated)
+                print("✅ 经验已更新")
+            else:
+                print("本次无新规律，经验库未变")
     except Exception:
         pass  # 经验写入失败不影响主流程
 
@@ -82,7 +86,7 @@ class AgentLoop:
                     if round_idx == max_adjustments:
                         ans = input(f"Agent 输出:\n{text[:500]}\n\n最终确认? (y=确认/暂存=保存退出/放弃=不保存退出): ")
                         if ans.lower() == "y":
-                            _ask_experience_confirm()
+                            _ask_experience_confirm(text)
                             H.tracer.flush()
                             return text
                         if "暂存" in ans:
@@ -100,7 +104,7 @@ class AgentLoop:
                     print("（输入 暂存=保存当前结果并退出，exit=直接退出）")
                     ans = input(f"Agent 输出:\n{text[:500]}\n\n确认? (y/调整建议): ")
                     if ans.lower() == "y":
-                        _ask_experience_confirm()
+                        _ask_experience_confirm(text)
                         H.tracer.flush()
                         return text
                     if ans.lower() in ("暂存", "save"):

@@ -50,3 +50,37 @@ def to_context(data: dict) -> str:
         for d in depts:
             lines.append(f"- {d.get('type','')}: {d.get('note','')}")
     return "\n".join(lines)
+
+
+def _extract_draft_json(text: str) -> dict:
+    """从 Agent 输出中提取【经验草案】标记后的 JSON。无则返回 None。"""
+    if not text:
+        return None
+    marker = "【经验草案】"
+    idx = text.find(marker)
+    if idx < 0:
+        return None
+    draft = text[idx + len(marker):].strip()
+    try:
+        return json.loads(draft)
+    except json.JSONDecodeError:
+        return None
+
+
+def merge_from_text(data: dict, text: str) -> dict:
+    """从 Agent 输出的经验草案合并到经验库（按分类去重追加）。"""
+    draft = _extract_draft_json(text)
+    if not draft:
+        return data
+    out = {k: list(v) for k, v in data.items()}
+    for cat in ("cmsPatterns", "pitfalls", "deptTypes"):
+        additions = draft.get(cat) or []
+        existing = out.setdefault(cat, [])
+        # 按关键字段去重：cmsPatterns 用 cms，pitfalls 用 desc，deptTypes 用 type
+        key_field = {"cmsPatterns": "cms", "pitfalls": "desc", "deptTypes": "type"}[cat]
+        existing_keys = {x.get(key_field) for x in existing}
+        for item in additions:
+            if item.get(key_field) and item.get(key_field) not in existing_keys:
+                existing.append(item)
+                existing_keys.add(item.get(key_field))
+    return out
