@@ -35,21 +35,23 @@ class Harness:
     config: dict
 
     @classmethod
-    def from_yaml(cls, path: str, rag_store=None) -> "Harness":
+    def from_yaml(cls, path: str, rag_store=None, entry: str = "main") -> "Harness":
         base = Path(path).resolve().parent
         with open(path, encoding="utf-8") as f:
             cfg = yaml.safe_load(f)
         cfg = _resolve_env(cfg)
 
-        # 规则
+        # 规则（按入口选）
         rules_text = ""
-        for r in cfg.get("rules", []):
+        rules_cfg = cfg["query"]["rules"] if entry == "query" else cfg.get("rules", [])
+        for r in rules_cfg:
             rules_text += (base / r["path"]).read_text(encoding="utf-8") + "\n"
 
-        # 工具
+        # 工具（按入口选工具子集）
         reg = ToolRegistry()
         paths = cfg.get("paths", {})
-        for t in cfg["tools"]["builtin"]:
+        tool_cfg = cfg["query"]["tools"]["builtin"] if entry == "query" else cfg["tools"]["builtin"]
+        for t in tool_cfg:
             mod = importlib.import_module(t["module"])
             factory = getattr(mod, t["factory"])
             tools = factory(strategies_dir=paths.get("strategies_dir", ".")) if t["factory"] == "make_file_tools" else factory()

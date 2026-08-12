@@ -84,36 +84,56 @@ def preflight(domain: str, store: FileStore, auto_confirm: bool = False) -> Pref
 
 
 def _manage_backups(domain: str, store: FileStore):
-    paths = store.backup_paths(domain)
-    print(f"\n{domain} 共有 {len(paths)} 个备份：")
-    for p in paths:
-        idx = p.stem[-1]  # stem = "cs.nju.edu.cn.bak1", [-1] = "1"
-        data = store.backup_read(domain, int(idx))
-        entries = len(data.get("entries", [])) if data else 0
-        print(f"  [{idx}] {p.name} — {entries} 个入口")
-    print("操作：删除 [N] | 启用 [N] | exit/done 结束")
+    print(f"\n{domain} 共有 {store.backup_count(domain)} 个备份：")
+    _list_backups(domain, store)
+    print("操作：删除 [N] | 启用 [N] | 简介 [N] | 列表 | exit/done 结束")
     for round_no in range(5):
         if round_no == 3:
             print("⚠️ 已达 3 轮，上限 5 轮")
-        ans = input(f"[备份管理 第{round_no+1}/5轮] 操作: ")
-        if ans.lower() in ("exit", "done", ""):
+        ans = input(f"[备份管理 第{round_no+1}/5轮] 操作: ").strip()
+        low = ans.lower()
+        if low in ("exit", "done", ""):
             break
+        if low in ("list", "列表"):
+            _list_backups(domain, store)
+            continue
         parts = ans.split()
-        if "删除" in ans and len(parts) >= 2:
-            for part in parts:
-                if part.isdigit():
-                    idx = int(part)
-                    store.backup_delete(domain, idx)
-                    print(f"  已删除备份 {idx}")
-                    # re-list after each action
-                    for p in store.backup_paths(domain):
-                        i = int(p.stem[-1])
-                        data = store.backup_read(domain, i)
-                        entries = len(data.get("entries", [])) if data else 0
-                        print(f"    [{i}] {p.name} — {entries} 个入口")
-        elif "启用" in ans and len(parts) >= 2:
-            for part in parts:
-                if part.isdigit():
-                    idx = int(part)
-                    store.backup_swap(domain, idx)
-                    print(f"  已将备份 {idx} 和当前策略交换")
+        idx_list = [int(part) for part in parts if part.isdigit()]
+        if "删除" in ans and idx_list:
+            for idx in idx_list:
+                store.backup_delete(domain, idx)
+                print(f"  已删除备份 {idx}")
+            _list_backups(domain, store)
+        elif "启用" in ans and idx_list:
+            for idx in idx_list:
+                store.backup_swap(domain, idx)
+                print(f"  已将备份 {idx} 和当前策略交换")
+        elif ("简介" in ans or "详情" in ans) and idx_list:
+            for idx in idx_list:
+                _show_backup_detail(domain, store, idx)
+        else:
+            print("  无法识别。支持：删除 [N] | 启用 [N] | 简介 [N] | 列表 | exit")
+
+
+def _list_backups(domain: str, store: FileStore):
+    if store.backup_count(domain) == 0:
+        print("  （无备份）")
+        return
+    for p in store.backup_paths(domain):
+        idx = p.stem[-1]
+        data = store.backup_read(domain, int(idx))
+        entries = len(data.get("entries", [])) if data else 0
+        meta = (data or {}).get("meta", {})
+        updated = meta.get("updated", "")
+        print(f"  [{idx}] {p.name} — {entries} 个入口，updated={updated}")
+
+
+def _show_backup_detail(domain: str, store: FileStore, idx: int):
+    data = store.backup_read(domain, idx)
+    if not data:
+        print(f"  备份 {idx} 不存在")
+        return
+    print(f"  备份 {idx} 详情：")
+    for e in data.get("entries", []):
+        print(f"    - {e.get('name','?')} | {e.get('url','?')} | 分页:{e.get('paginationType','?')}")
+    print(f"    提取规则: {json.dumps(data.get('extraction', {}), ensure_ascii=False)[:120]}")
