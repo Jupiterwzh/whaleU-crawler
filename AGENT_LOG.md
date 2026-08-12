@@ -23,6 +23,7 @@
 | 08-06 | B3 query.py | TDD + subagent | subagent | `a3ad4a3` | — | 复用 harness，新增入口 |
 | 08-06 | B4 工程收尾 | — | controller | `37d8f9f` | 用户选 Docker 分发 | 分发暴露运行环境隐式依赖 |
 | 08-12 | B5 冷启动+文档 | brainstorm + cold-start | explore agent + controller | `040c79c`~`<HEAD>` | 冷启动停 8 处 | spec"我以为写清楚"≠文字写清楚 |
+| 08-12 | B6 WebUI 单页表单 | TDD | controller | `webui.py` | 用户选表单式 | 复用 query.answer() 零新依赖 |
 
 ---
 
@@ -362,5 +363,48 @@ data/checkpoints/<domain>.crash.json    特殊暂存 0/1
 - **y/n 强制匹配 + 安全退出**（commit `92fc1f6`）：`preflight` 和 `guardrail` 的 y/n 提示改为 3 次重试 + 默认回退值 + 同场对话 ≥2 次无效输入退出。
 - **注入防御**（commit `55eeefe`）：Agent 反馈注入处加安全边界标注，防止用户输入中的指令注入攻击。
 - **文档同步 + 清理**（commit `dec8c2c`、`a39b980`）：README.md/MANUAL_CHECKS.md 更新为三段式工作流；删除无用文件（PLAN.md、strategies.json v2 标记、debug_layers.py、旧 crawler data jsonl、旧 src/ 目录、旧 SDD 工作区 PLAN/、旧 traces/ 测试产物）
+
+---
+
+## 2026-08-12 会话八：大作业收尾（多 Agent 升级 + 交付物 + WebUI）
+
+### [人] 核心目标升级
+- 项目作为 AI4SE 期末大作业（B 类应用项目，含自研 agent 部分）提交
+- 核心目标：基于 harness 的多 Agent 协作——策略 Agent + RAG + 查询 Agent（RAG 检索，不够调爬虫补充）
+
+### [AI] 可行性再评估
+- 对照通用要求 §五 9 项交付物逐条核对：文档类可行，但 WebUI（§五.9）、CI 实跑（§五.7）、Docker 验证（§五.3）为硬缺项
+- 结论：可行，核心代码深度足够，缺过程文档 + 工程收尾
+
+### [AI] 文档交付物（controller 直写）
+- **SPEC.md** 重写为 10 节（commit `41cce8b`）：含凭据威胁模型、B.2 确定性测试设计
+- **PLAN.md** 重建（commit `fc72a01`）：A 组已完成（附 commit）+ B 组待实现（RAG/query/收尾）+ 依赖图；中途一次编辑失误搞乱结构，修复
+- **SPEC_PROCESS.md**（commit 后）：brainstorm 4 轮节选 + 冷启动验证 8 缺陷 + 反思
+- **REFLECTION.md**（commit 后）：2300 字，9 问全答
+- **AGENT_LOG** task 级摘要表 + **README 3.0**（commit `b7a44cb`）
+- 教训：**AGENT_LOG 必须边做边记**——用户明确要求，不留到后期杜撰
+
+### [AI] 冷启动验证（B.2 客观证据）
+- 用 explore agent（与主开发 general 类型不同）+ 新 session + 仅 SPEC+PLAN 实现 B1
+- 停 8 个阻塞点：分词/打分/索引格式/slice/dedup/归一化/首启/current-archive 未定义
+- 据修订 SPEC §3.2b（RAG 详细规约）+ PLAN B1 验证步骤（commit `040c79c`）
+- 教训：spec"我以为写清楚"≠文字写清楚；冷启动应尽早做（本次实现后补，价值打折）
+
+### [AI] B 组实现（subagent-driven）
+- **B1 RAGStore**（commit `8ea830a`）：JSONL 文档库 + 倒排索引 + current/archive，subagent 修复 brief bug
+- **B2 rag_tools**（commit `860b674`）：rag_search + run_crawler
+- **B3 query.py**（commit `a3ad4a3`）：harness 加 rag_store 参数，query 入口
+- **B4 工程收尾**（commit `37d8f9f`）：Makefile + .gitlab-ci.yml + Dockerfile + keyring 凭据（src/keys.py）
+
+### [AI+人] B6 WebUI（表单式）
+- 用户选单页表单（会话式聊天需 query-agent 多轮记忆，不匹配当前无状态架构）
+- 重构 query.py 抽 `answer()` 复用函数；webui.py 用标准库 http.server（零新增依赖）
+- TDD：2 测试（GET 返回表单页 + POST 返回答案），58 测试全过
+
+### 待办（硬缺项）
+- [ ] query-agent 真实验收（真实 LLM + 真实网站跑通全流程，需用户 key）
+- [ ] WebUI 部署（用户，需公网或内网可访问）
+- [ ] CI 实跑 + 末次 pass（用户 push GitLab）
+- [ ] Docker build 验证（用户，耗时命令）
 
 ---

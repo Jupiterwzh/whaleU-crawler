@@ -27,19 +27,23 @@ def resolve_rag_dir() -> str:
     return str(Path(__file__).resolve().parent.parent / "data" / "rag")
 
 
-def main():
-    load_env()
-    args = sys.argv[1:]
-    question = " ".join(args) or input("❓ 问题: ")
-
-    store = RAGStore(resolve_rag_dir())
+def answer(question: str, rag_dir: str | None = None) -> str:
+    """执行一次查询：RAG 检索 → 不够则爬虫补充 → 返回答案。CLI 与 WebUI 共用。"""
+    store = RAGStore(rag_dir or resolve_rag_dir())
     if store.is_stale():
         store.refresh()
 
     harness = Harness.from_yaml("agent.yaml", rag_store=store)
     llm = LLMClient()
     loop = AgentLoop(harness, llm)
-    result = loop.run(f"用户问题: {question}\n请先从 RAG 检索，检索不到再考虑调用 run_crawler 补充。")
+    return loop.run(f"用户问题: {question}\n请先从 RAG 检索，检索不到再考虑调用 run_crawler 补充。")
+
+
+def main():
+    load_env()
+    args = sys.argv[1:]
+    question = " ".join(args) or input("❓ 问题: ")
+    result = answer(question)
     print(f"\n✅ 答案:\n{result}")
 
 
