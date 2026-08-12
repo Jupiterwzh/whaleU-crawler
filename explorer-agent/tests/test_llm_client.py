@@ -26,11 +26,11 @@ def test_chat_parses_tool_calls():
 
 def test_chat_raises_on_missing_env(monkeypatch):
     monkeypatch.delenv("LLM_API_KEY")
-    import importlib
-    import src.llm.client
-    importlib.reload(src.llm.client)
-    try:
-        src.llm.client.LLMClient()
-        assert False, "应抛错"
-    except RuntimeError:
-        pass
+    import src.llm.client as client_mod
+    with patch.object(client_mod, "get_key", return_value=""), \
+         patch.object(client_mod, "ensure_key", side_effect=RuntimeError("LLM_API_KEY 环境变量未设置")):
+        try:
+            client_mod.LLMClient()
+            assert False, "应抛错"
+        except RuntimeError:
+            pass

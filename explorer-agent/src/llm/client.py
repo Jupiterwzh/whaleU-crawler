@@ -5,13 +5,15 @@ import time
 
 from openai import OpenAI, RateLimitError, APIConnectionError
 
+from src.keys import get_key, ensure_key
+
 
 class LLMClient:
     def __init__(self):
         base_url = os.environ.get("LLM_BASE_URL")
-        api_key = os.environ.get("LLM_API_KEY")
+        api_key = os.environ.get("LLM_API_KEY") or get_key()
         if not api_key:
-            raise RuntimeError("LLM_API_KEY 环境变量未设置")
+            api_key = ensure_key()  # 首启引导录入
         self.model = os.environ.get("LLM_MODEL", "deepseek/deepseek-v4-flash(free)")
         self._client = OpenAI(base_url=base_url, api_key=api_key)
 
