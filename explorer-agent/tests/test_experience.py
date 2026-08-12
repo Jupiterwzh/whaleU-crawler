@@ -1,6 +1,8 @@
 """经验库读写测试。"""
 import json
+import sys
 from pathlib import Path
+from unittest.mock import patch
 from src.experience import load_experiences, save_experiences, to_context, default_experiences
 
 
@@ -33,3 +35,20 @@ def test_to_context_contains_patterns(tmp_path):
     ctx = to_context(load_experiences(str(path)))
     assert "苏迪CMS" in ctx
     assert "news_title" in ctx
+
+
+def test_main_injects_experience_context(tmp_path, monkeypatch, capsys):
+    """main.py 探索时注入经验库文本到 goal。"""
+    monkeypatch.chdir(Path(__file__).parent.parent)
+    import main
+    with patch.object(main, "preflight", return_value=type("R", (), {
+        "should_exit": False, "crash_mode": False, "goal_context": ""})()), \
+         patch.object(main, "postflight"), \
+         patch.object(main, "LLMClient"), \
+         patch.object(main, "AgentLoop", autospec=True) as mock_loop:
+        fake = mock_loop.return_value
+        fake.run.return_value = "ok"
+        sys.argv = ["main.py", "探索 https://yzb.nju.edu.cn/ 的通知公告入口"]
+        main.main()
+    goal = fake.run.call_args[0][0]
+    assert "苏迪CMS" in goal or "通用规律" in goal

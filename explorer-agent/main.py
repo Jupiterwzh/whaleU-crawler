@@ -13,6 +13,7 @@ from src.llm.client import LLMClient
 from src.filestore import FileStore
 from src.preflight import preflight
 from src.postflight import postflight
+from src.experience import load_experiences, to_context
 
 
 def load_env():
@@ -74,6 +75,8 @@ def main():
         suffix = f"策略 JSON 保存到 {strategies_dir}/{domain}.json" if strategies_dir else ""
         goal = f"{user_goal}。{suffix}。{ctx}"
     goal = goal.strip("。 ")
+    exp_text = to_context(load_experiences())
+    goal = f"{goal}\n{exp_text}"
 
     # ---- Agent 循环 ----
     old_data = store.strategy_read(domain)  # 快照旧策略（Agent 写入后会覆盖）
