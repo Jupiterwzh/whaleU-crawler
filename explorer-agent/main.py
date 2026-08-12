@@ -63,7 +63,11 @@ def main():
         strategies_dir = str(Path(strategies_dir).resolve())
     if explore_only:
         strategy_path = f"{strategies_dir}/{domain}.json" if strategies_dir else "策略目录"
-        goal = f"探索 {url} 的通知公告入口，生成爬取策略 JSON，写入 {strategy_path}。不要调用爬虫执行爬取。"
+        crawler_script = os.environ.get("CRAWLER_SCRIPT", "")
+        goal = (f"探索 {url} 的通知公告入口，生成爬取策略 JSON，写入 {strategy_path}。"
+                f"不要调用爬虫执行爬取。"
+                f"生成后必须验证：用 run_shell 执行 `node {crawler_script} --verify {strategy_path}` "
+                f"实测每个入口，据报告剔除无效入口（非列表页/抓取失败），再写入最终策略。")
     else:
         user_goal = " ".join(args) or input("🎯 任务: ")
         ctx = result.goal_context
