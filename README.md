@@ -9,7 +9,8 @@
 | 爬虫 | `crawler/` | JavaScript | 按策略爬取网页、提取通知、存储 JSONL |
 | 策略 Agent（内层） | `explorer-agent/` | Python | 探索网站、生成/管理爬取策略 |
 | 查询 Agent（外层） | `query-agent/` | Python | 管理 RAG 与爬虫：检索回答、不足则调爬虫补充 |
-| RAG 存储（公共） | `shared/rag/` | Python | JSONL 文档库 + 倒排索引（current/archive） |
+| RAG 管理 Agent | `rag-manager/` | Python | 入库后自动触发：赋予通知有效时间、重建索引 |
+| RAG 存储（公共） | `shared/rag/` | Python | JSONL 文档库 + 倒排索引（current/archive + 有效时间） |
 
 ```
 whaleU-crawler/
@@ -27,7 +28,11 @@ whaleU-crawler/
 │   ├── src/{harness,agent_loop,llm,tools,guardrail,tracer,keys}
 │   ├── rules/query_AGENTS.md # 查询 Agent 规则
 │   └── SPEC.md               # 外层 Agent 设计
-├── shared/rag/               # RAGStore（公共位置）
+├── rag-manager/              # RAG 管理 Agent（入库后自动触发）
+│   ├── rag_manager.py        # 有效时间赋予 + 索引重建入口
+│   ├── src/                  # 独立 harness 内核（真复制）
+│   └── SPEC.md
+├── shared/rag/               # RAGStore + validity 判定（公共位置）
 ├── data/                     # FileStore 目录（策略/备份/暂存/crash，从 STRATEGIES_DIR 推导）
 ├── Dockerfile / .gitlab-ci.yml / Makefile
 ├── AGENTS.md / AGENT_LOG.md / README.md / 待办.md

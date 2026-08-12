@@ -90,15 +90,15 @@
 ### 组件图
 
 ```
-用户 (CLI)
-   │  query.py
+用户 (CLI query.py / WebUI webui.py)
+   │
    ▼
-┌─────────────── query-agent ───────────────┐
-│  AgentLoop(复用)  Guardrail(复用)  Tracer(复用) │
-│  工具: rag_search │ run_crawler │ read_file │ run_shell │
+┌─────────────── query-agent（最外层）──────────────┐
+│  AgentLoop  Guardrail  Tracer                    │
+│  工具: rag_search │ run_crawler │ read_file       │
 └───────┬──────────────┬───────────────┬─────┘
         │              │               │
-   rag_search     run_crawler      read_file/run_shell
+   rag_search     run_crawler      read_file
         │              │               │
         ▼              ▼               ▼
    ┌────────┐    ┌──────────┐    ┌───────────┐
@@ -106,20 +106,25 @@
    │ (docs+   │    │ 按策略爬取  │    │ 策略/备份   │
    │  index)  │    │ JSONL输出  │    │ /暂存      │
    └────────┘    └────┬─────┘    └───────────┘
-                      │ 无策略时委托
-                      ▼
-              ┌───────────────┐
-              │ explorer-agent │
-              │ 生成/更新策略   │
-              └───────────────┘
+        ▲ 入库后自动触发 │ 无策略时委托
+        │              ▼
+   ┌──────────────────────┐   ┌───────────────┐
+   │ rag-manager           │   │ explorer-agent │
+   │ 有效时间赋予+索引重建   │   │ 生成/更新策略   │
+   │ 工具: read_rag_docs    │   └───────────────┘
+   │  assign_validity       │
+   │  rebuild_index         │
+   └──────────────────────┘
 ```
 
 ### 数据流
 
 1. 用户提问 → query-agent 启动 → `RAGStore.is_stale()` → 陈旧则 `refresh()`
 2. Agent 调 `rag_search(query)` → 命中则组织答案（带 URL）返回
-3. 未命中 → 调 `run_crawler(site)` → crawler 输出 JSONL → 入库 RAG → 再 `rag_search` → 回答
-4. 全过程写入轨迹文件
+3. 未命中 → 调 `run_crawler(site)` → crawler 输出 JSONL → 入库 RAG
+4. **入库新增 > 0 → 自动触发 rag-manager**：批量判定有效时间 → 写回 valid_from/until → 重建 current 索引（只含仍有效）
+5. 再 `rag_search` → 回答
+6. 全过程写入轨迹文件
 
 ### 外部依赖
 

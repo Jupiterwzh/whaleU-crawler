@@ -486,3 +486,28 @@ data/checkpoints/<domain>.crash.json    特殊暂存 0/1
 - [ ] 转 PLAN 实现：RAG 管理 Agent + 入库自动触发 + current 索引按有效时间过滤
 
 ---
+
+## 2026-08-12 会话十二：RAG 管理 Agent 实现（SDD 执行）
+
+### [AI] 设计 + 计划
+- spec `2026-08-12-rag-manager-design.md`：有效时间规则（明确链/无时间戳档位/跨关联）、存储字段（valid_from/until/effective_days）、current 过滤、入库自动触发
+- plan `2026-08-12-rag-manager.md`：5 task（shared扩展/validity纯函数/rag-manager Agent/触发链路/文档同步）
+
+### [AI] SDD 执行（5 task，subagent-driven）
+- **Task 1** shared/rag 扩展（commit `421cd25`）：search 加 date_from/date_to/domain/scope；`_is_valid`/`pending_validity`/`apply_validity`；build_index 按有效时间过滤 current。subagent 修正 brief 内部矛盾（保留 365 天 cutoff、valid_until 用严格 >），9/9 测试
+- **Task 2** validity 纯函数（commit `a1131f9`）：`extract_dates`/`judge_validity`，无 LLM 确定性底座，3/3 测试
+- **Task 3** rag-manager/ 独立 Agent（commit `9dd93e6`）：真复制 harness 内核 + RagManager（_llm_judge 纯函数兜底）+ 3 工具 + SPEC，2/2 测试
+- **Task 4** 触发链路（commit `4a8c015`）：run_crawler ingest 新增>0 → _trigger_rag_manager，4/4 测试
+- **Task 5** 文档同步（本会话）：根 SPEC 架构图 + README 组件表/目录 + AGENT_LOG + 待办
+
+### [AI] 架构现状
+- 三 Agent：explorer-agent（策略）/ query-agent（最外层，问答）/ rag-manager（有效时间，入库自动触发）
+- shared/rag 公共位置：RAGStore + validity
+- 测试：explorer 45 + query-agent 14 + rag-manager 2（增量后）
+
+### 待办
+- [ ] RAG 管理 Agent 真实验收（真实入库→自动赋有效时间→查询只返回有效）
+- [ ] R1-R3 检索增强已实现（date/domain/archive scope），待真实数据验证
+- [ ] L2 爬虫输出 jsonl 归档/清理（低优先级）
+
+---
