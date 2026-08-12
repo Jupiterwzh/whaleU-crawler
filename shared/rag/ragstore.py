@@ -188,8 +188,24 @@ class RAGStore:
                 "content": doc.get("content", ""),
                 "domain": dom,
                 "score": round(score, 4),
+                "snippet": self._make_snippet(doc.get("content", ""), query),
             })
         return result
+
+    def _make_snippet(self, content: str, query: str, window: int = 60) -> str:
+        """返回 query 首个命中词附近的片段（前后 window 字）。内容短或未命中则返回截断。"""
+        content = (content or "").strip()
+        if not content:
+            return ""
+        if len(content) <= window * 2:
+            return content
+        for term in self._tokenize(query):
+            idx = content.find(term)
+            if idx >= 0:
+                start = max(0, idx - window)
+                end = min(len(content), idx + len(term) + window)
+                return content[start:end]
+        return content[: window * 2]
 
     def pending_validity(self) -> list[dict]:
         """返回缺有效时间字段的文档。"""

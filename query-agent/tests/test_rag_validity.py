@@ -54,3 +54,26 @@ def test_current_excludes_expired(tmp_path):
     store.refresh()
     assert store.search("x") == []
     assert len(store.search("x", scope="archive")) == 1
+
+
+def test_search_returns_snippet(tmp_path):
+    """R4: search 返回命中词附近片段。"""
+    store = RAGStore(str(tmp_path))
+    long_text = "前文占位。" * 100 + "考试安排通知。正式内容。" + "后文占位。" * 100
+    store.ingest([{"title": "考试通知", "content": long_text, "url": "u1", "domain": "d", "date": _mkdate(1)}])
+    store.refresh()
+    hits = store.search("考试", top_k=1)
+    assert len(hits) == 1
+    snip = hits[0].get("snippet", "")
+    assert "考试" in snip
+    assert len(snip) <= 140  # 前后60字 + 命中词
+
+
+def test_search_snippet_short_content(tmp_path):
+    """内容很短时 snippet 返回全文。"""
+    store = RAGStore(str(tmp_path))
+    store.ingest([{"title": "t", "content": "关于考试的简短通知", "url": "u1", "domain": "d", "date": _mkdate(1)}])
+    store.refresh()
+    hits = store.search("考试", top_k=1)
+    assert "考试" in hits[0]["snippet"]
+    assert hits[0]["content"] == "关于考试的简短通知"
