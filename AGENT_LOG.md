@@ -630,4 +630,15 @@ data/checkpoints/<domain>.crash.json    特殊暂存 0/1
 - **ndwy.nju.edu.cn 需要南大 VPN**：连接 VPN 时 Agent 进程报无法使用，不连时网站无法访问
 - 结论：网络环境问题（非代码/key bug），待用户决定（见待办.md）
 
+### [AI] 多站点测试结论（docx 清单 57 站选 10）
+- **能爬+能分析**：yzb（✅完整闭环）、hr、tzb（苏迪 CMS 同款）
+- **能爬但需甄别外链**：grawww 首页 26 条多为 mp.weixin.qq.com 公众号外链——爬虫需区分站内通知 vs 外链
+- **域名异常**：jwb→纪检监察网、xkb→学科建设办（docx 域名可能错）
+- **环境受限**：ndwy 需 VPN
+
+### [AI] 待办
+- [ ] 爬虫区分站内 vs 外链（grawww 暴露）
+- [ ] ndwy VPN 方案待用户决定
+- [ ] hr/tzb/grawww 批量生成策略
+
 ---
