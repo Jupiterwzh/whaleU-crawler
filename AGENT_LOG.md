@@ -454,4 +454,12 @@ data/checkpoints/<domain>.crash.json    特殊暂存 0/1
 - 同步 Docker/CI/README/根 SPEC 的架构描述
 - 职责链：用户 → 外层 Agent(query) → 调爬虫 → 无策略时委托内层策略 Agent → 数据入库 RAG → 回答
 
+### [AI] 重构执行（commit `a4262aa` + 清理）
+- **query-agent/ 独立目录**：复制自研 harness 内核（harness/agent_loop/guardrail/tracer/tools/llm/keys）
+- **shared/rag/**：RAGStore 移到公共位置（git 识别为 rename）
+- **explorer-agent 恢复纯策略 Agent**：移除 query.py/webui.py/rag/rag_tools，harness 去掉 rag_store/entry 参数
+- 测试：explorer 45 + query-agent 14 全过
+- 清理：crawler/data/rag+backups 运行产物 gitignore + untrack；webui.py 迁 query-agent
+- 提交混乱教训：`git add -A` 把无关改动（用户改的 opencode.json、被删文档）混入——应精确 add
+
 ---
