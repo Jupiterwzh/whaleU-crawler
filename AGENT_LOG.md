@@ -434,3 +434,24 @@ data/checkpoints/<domain>.crash.json    特殊暂存 0/1
 - [ ] RAG 检索能力增强 + 数据链路打通（用户确认"两者都要"）
 
 ---
+
+## 2026-08-12 会话十：外层 Agent 独立化架构决策
+
+### [人] 架构澄清
+- 纠正：策略 Agent 只生成/管理爬取策略；外层 Agent 管理 RAG 与爬虫
+- 外层 Agent 希望是**完整 Agent**（配 harness），方便独立修改与大作业要求
+- 确认点 A/B：外层去掉 read_file、不读策略文件
+- 确认点 C：RAG 管理 Agent 是**冗余设计**（RAG 管理是确定性操作，不需要 LLM 决策循环）→ 保持为模块 + 工具
+
+### [人] 决策
+- 外层 Agent **完全独立**（选项 B）：新建 query-agent/ 目录，复制自研 harness 内核
+- harness 内核**真复制**（两处同步，注释标明）
+- RAGStore 放**公共位置**（shared/），非任一 Agent 专属
+
+### [AI] 待执行重构
+- 新建 `query-agent/`：agent.yaml / query.py / rules / guardrails / src(复制 harness) / tests / SPEC.md
+- RAGStore 移 `shared/rag/`
+- 同步 Docker/CI/README/根 SPEC 的架构描述
+- 职责链：用户 → 外层 Agent(query) → 调爬虫 → 无策略时委托内层策略 Agent → 数据入库 RAG → 回答
+
+---
