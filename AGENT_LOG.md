@@ -693,4 +693,15 @@ data/checkpoints/<domain>.crash.json    特殊暂存 0/1
 - [ ] 评估 crawler 是否需 crawlStructure 辅助
 - [ ] 待决定问题写入待办.md（完成后补问）
 
+### [AI] rules 遍历指令完成（commit 后）
+- rules/AGENTS.md 重写：加"网站结构遍历"节
+  - BFS 分层遍历 + visited 集合防循环 + domain 白名单（外链停止）+ URL 规范化
+  - 页面分类：列表页✅/中间页递归/详情页不深入/功能页/外链
+  - 深度上限 4 层、每页 30 链接（防爆炸）
+  - 输出改为"网站结构树 + 标记"，再给策略
+- 54 测试无回归
+
+### [AI] 待决定（待办.md，完成后补问）
+- 爬虫是否加 `crawlStructure(url)` 确定性辅助（Agent 自己 LLM 判断页面类型易错费 token；爬虫复用 extractInternalLinks+isNotificationListPage 更可靠）——较大改动，待用户确认方向
+
 ---
