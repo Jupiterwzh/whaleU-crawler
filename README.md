@@ -1,84 +1,116 @@
-# 蓝鲸U — 南京大学通知公告智能爬虫
+# 蓝鲸U — 南京大学通知公告多 Agent 协作系统
 
-> 版本 2.1 | 更新：2026-08-05
+> 版本 3.0 | 更新：2026-08-12
 
-自动发现、爬取、汇总南京大学各院系网站的通知公告，输出结构化 JSONL 数据。
+基于 harness 工程的多 Agent 协作系统：自动探索 NJU 各院系网站、生成爬取策略、抓取通知、建立 RAG 知识库，并用自然语言查询通知。
 
 | 部分 | 目录 | 语言 | 职责 |
 |------|------|------|------|
 | 爬虫 | `crawler/` | JavaScript | 按策略爬取网页、提取通知、存储 JSONL |
-| 探索 Agent | `explorer-agent/` | Python | 三段式探索：前导检查→Agent 生成→后导保存 |
-| NJU 浏览器 | `nju-browser/` | Node.js | Puppeteer 浏览器服务（Agent 通过 run_shell 调用） |
+| 策略 Agent | `explorer-agent/` | Python | 三段式探索：前导检查→Agent 生成→后导保存 |
+| 查询 Agent | `explorer-agent/query.py` | Python | 复用 harness，RAG 检索→不够则调爬虫补充→回答 |
+| RAG 存储 | `explorer-agent/src/rag/` | Python | JSONL 文档库 + 倒排索引（current/archive） |
 
 ```
 whaleU-crawler/
 ├── crawler/                  # JS 爬虫（执行者）
-│   ├── src/{collectors,explorers,analyzers,strategies}
-│   └── data/strategies/      # 策略文件（Agent 写、爬虫读）
-├── explorer-agent/           # Python Agent（探索者，Harness Engineering）
-│   ├── agent.yaml            # 声明式总配置
-│   ├── src/{harness,agent_loop,llm,tools,guardrail,tracer,filestore,preflight,postflight}
+│   └── src/collectors/collector.js
+├── explorer-agent/           # Python Agent（Harness Engineering）
+│   ├── main.py               # 策略 Agent 入口（三段式）
+│   ├── query.py              # 查询 Agent 入口
+│   ├── src/{harness,agent_loop,llm,tools,guardrail,tracer,filestore,preflight,postflight,keys}
+│   ├── src/rag/              # RAGStore（docs + 倒排索引）
 │   ├── rules/AGENTS.md       # Agent 行为规则
 │   ├── guardrails/           # 安全门控策略
-│   └── SPEC.md               # 设计规格
-├── data/                     # FileStore 管理目录（备份/暂存/crash，自动从 STRATEGIES_DIR 推导）
-│   ├── strategies/           # 标准策略（由 crawler/data/strategies 聚合）
-│   ├── backups/              # 策略备份 ≤3/域名
-│   └── checkpoints/          # 暂存 + 崩溃恢复
-├── nju-browser/              # NJU 浏览器服务（Puppeteer + Chrome）
-├── 无关文档/                 # 教程/学习文档（.gitignore 排除）
-├── AGENTS.md                # opencode 协作规则
-├── AGENT_LOG.md             # 开发过程记录
+│   └── SPEC.md / PLAN.md / SPEC_PROCESS.md / REFLECTION.md   # 大作业交付物
+├── data/                     # FileStore 目录（策略/备份/暂存/crash，从 STRATEGIES_DIR 推导）
+├── Dockerfile / .gitlab-ci.yml / Makefile
+├── AGENTS.md / AGENT_LOG.md / README.md
 └── opencode.json
 ```
 
 ## 快速开始
 
-### 1. 配置 .env
+### 1. 配置凭据（安全存储，非明文）
 
-复制模板并填入真实值：
 ```bash
 cd explorer-agent
-cp .env.example .env
-# 编辑 .env：LLM_API_KEY 用 ${CHERRYIN_API_KEY} 引用 WSL 环境变量（不填字面量）
+python -m src.keys set    # 引导隐藏录入 key → 存入系统钥匙串
+# 或用环境变量：export LLM_API_KEY=$CHERRYIN_API_KEY
 ```
 
-### 2. 运行 Agent
+### 2. 查询通知（查询 Agent）
+
+```bash
+cd explorer-agent
+python query.py "计算机学院最近有什么通知"
+```
+
+### 3. 生成/更新策略（策略 Agent）
 
 ```bash
 cd explorer-agent
 python main.py "探索 https://cs.nju.edu.cn/ 的通知公告入口"
 ```
 
-流程：**前导检查**（崩溃恢复/暂存/备份/已有策略）→ **Agent 探索**（步进可视化 + 交互确认）→ **后导保存**（备份/替换旧策略）。
-
-### 3. 爬虫（已有策略时直接爬取）
+### 4. 爬虫（已有策略时直接爬取）
 
 ```bash
 cd crawler
 node src/collectors/collector.js --site https://cs.nju.edu.cn/ --days 365
 ```
 
+### 5. 测试
+
+```bash
+make test    # 或 cd explorer-agent && python -m pytest -q
+```
+
 ## 协作模式
 
-- **模式 A（爬虫入口）**：`node collector.js --site <url>` 无策略 → 自动调 Agent 生成策略 → 继续爬取。
-- **模式 B（Agent 入口）**：`python main.py "探索 X"` → Agent 生成策略 → 交互确认 → 后导保存。
+- **模式 A（爬虫入口）**：`node collector.js --site <url>` 无策略 → 自动调策略 Agent → 继续爬取。
+- **模式 B（策略 Agent 入口）**：`python main.py "探索 X"` → 前导检查 → Agent 生成 → 交互确认 → 后导保存。
+- **模式 C（查询 Agent 入口）**：`python query.py "问题"` → RAG 检索 → 不够则调爬虫补充入库 → 回答。
+
+## 分发（Docker）
+
+```bash
+docker build -t whalequery .
+docker run -v $PWD/.env:/app/explorer-agent/.env \
+  -e CHERRYIN_API_KEY=$CHERRYIN_API_KEY \
+  whalequery query "最近有什么通知"
+```
+
+> 说明：Docker/Linux 下 keyring 可能无系统后端，key 用环境变量传入；钥匙串方案适用于本机（macOS/Win/Linux Desktop）。
+
+## 测试与 CI
+
+- 一键测试：`make test`
+- CI：`.gitlab-ci.yml` 定义 `unit-test` job，push 自动跑
+- 核心机制（主循环/工具分发/guardrail/RAG）用 mock/stub LLM 做确定性单元测试
 
 ## 环境变量
 
 | 变量 | 说明 |
 |------|------|
 | `LLM_BASE_URL` | LLM 端点 |
-| `LLM_API_KEY` | LLM 密钥（建议 `${CHERRYIN_API_KEY}` 引用 WSL 环境变量） |
+| `LLM_API_KEY` | LLM 密钥（可用钥匙串替代） |
 | `LLM_MODEL` | 模型名 |
-| `STRATEGIES_DIR` | 策略目录（指向 crawler/data/strategies/） |
+| `STRATEGIES_DIR` | 策略目录 |
 | `CRAWLER_SCRIPT` | 爬虫脚本路径 |
 | `NJU_BROWSER_DIR` | NJU 浏览器服务目录 |
-| `DATA_DIR` | 备份/暂存根目录（可选，自动从 STRATEGIES_DIR 推导） |
+| `RAG_DIR` | RAG 存储目录（默认从 STRATEGIES_DIR 推导） |
+
+## 安全边界
+
+- 凭据：key 走系统钥匙串（`src/keys.py`）或环境变量，`.env` 为明文且被 gitignore，SPec 安全节有威胁模型
+- 门控：Agent 工具调用经 guardrail 策略（危险操作 deny/ask_user）
+- 注入：用户反馈注入 LLM 时有边界标记，防 prompt 注入
+- 崩溃：strategy/crash 文件原子写，防中断截断
 
 ## 依赖
 
 - **Node.js 18+**（爬虫）
-- **Python 3.11+**（Agent，环境已有 3.13）
-- 爬虫：无外部 npm 依赖（HTTP 模式纯内置模块）
-- Agent：`openai` / `pyyaml` / `httpx` / `pytest` / `python-dotenv`
+- **Python 3.11+**（Agent）
+- 爬虫：无外部 npm 依赖
+- Agent：`openai` / `pyyaml` / `httpx` / `pytest` / `python-dotenv` / `keyring`

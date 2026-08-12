@@ -1,11 +1,32 @@
 # AGENT_LOG — 开发过程记录
 
 > 记录 AI 行为、人工决定、关键操作，用于复习与教师检查。
-> 格式：按会话倒序，每条标注 [AI] 或 [人] 或 [AI+人]。
+> 下方为**作业要求的 task 级过程证据摘要表**；其后为按会话叙述的完整历史（过程细节、subagent 报告、人工干预原文）。
 
 ---
 
-## 2026-08-03 会话一：项目理解 + 爬虫检查 + Agent 设计
+## 作业格式摘要表（task 级）
+
+| 时间 | Task | 技能 | 执行者 | Commit | 人工干预 | 教训 |
+|------|------|------|--------|--------|----------|------|
+| 08-03 | T0-10 | TDD + subagent-driven | subagent ×10 | `430ad83`~`983ce0e` | Task9 修复循环 ×5 轮 | assistant 消息缺 tool_calls 字段（真实 LLM 必失败） |
+| 08-03 | T11-12 | subagent-driven + review | subagent | `ee5414b` `4531b41` | 确认 17 项参数假设 | 实现前必须逐项确认假设 |
+| 08-04 | 仓库合并/.env | — | controller | `c3e2e94` | 用户改 .env 格式 | 值加引号避免 shell 解析错误 |
+| 08-04 | AGENTS.md | brainstorm | controller | `61b736e` | 用户改 5 条规则 | 规则须持久化到 AGENTS.md 防遗忘 |
+| 08-04 | .env 自动加载 | brainstorm→spec→plan→TDD | subagent ×2 | `7d0b031` `5c80671` | 检查1失败暴露 | override=False 被旧 env 阻塞 → override=True |
+| 08-04 | 交互确认+步进 | TDD | controller | `cfb90d4` `4c9833a` | 用户要全流程可视化 | 黑箱审批不可接受 |
+| 08-05 | A 组三段式 | brainstorm→spec→plan→SDD | subagent ×4 | `71732b7`~`5021663` | 修复 6 处路径/crash bug | brief 代码也可能有 bug，subagent 修复合理 |
+| 08-05 | 重试/注入/y-n | TDD | controller | `566dd80` `55eeefe` `92fc1f6` | 用户要求 429 重试、注入防护 | 用户输入注入 LLM 需边界标记 |
+| 08-06 | 大作业文档 | — | controller | `41cce8b`~`040c79c` | 核心目标升级多 Agent | 冷启动验证暴露 8 个 spec 缺陷 |
+| 08-06 | B1 RAGStore | TDD + subagent | subagent | `8ea830a` | — | brief 的 backup 逻辑有 bug，subagent 修复 |
+| 08-06 | B2 rag_tools | TDD + subagent | subagent | `860b674` | — | 工具错误处理须显式写死 |
+| 08-06 | B3 query.py | TDD + subagent | subagent | `a3ad4a3` | — | 复用 harness，新增入口 |
+| 08-06 | B4 工程收尾 | — | controller | `37d8f9f` | 用户选 Docker 分发 | 分发暴露运行环境隐式依赖 |
+| 08-12 | B5 冷启动+文档 | brainstorm + cold-start | explore agent + controller | `040c79c`~`<HEAD>` | 冷启动停 8 处 | spec"我以为写清楚"≠文字写清楚 |
+
+---
+
+## 会话记录（完整历史）## 2026-08-03 会话一：项目理解 + 爬虫检查 + Agent 设计
 
 ### [AI] 项目通读
 - 通读全部文档：README.md、流程参考.md、教程.md、AGENT_REQUIREMENTS.md、notes.md、SPEC.md、AGENTS.md、context-pack.md 等。
