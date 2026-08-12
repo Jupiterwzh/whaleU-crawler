@@ -601,4 +601,17 @@ data/checkpoints/<domain>.crash.json    特殊暂存 0/1
 - [ ] Agent 据 verify 报告修正策略的闭环流程
 - [ ] 就业信息栏等无效入口处理（Agent 应剔除）
 
+### [AI] 闭环完整实现
+- **crawler --verify 模式**：verifyStrategy() 实测每入口，isNotificationListPage 判定 → 列表页/非列表页/抓取失败报告
+- **rules/AGENTS.md**：加"生成后必须 --verify 验证 + 据报告修正 + notes 写自我总结"
+- **main.py explore-only goal**：注入 CRAWLER_SCRIPT，明确要求 Agent 调 --verify
+- **爬虫 node 测试**（crawler/test/collector.test.js，5 用例）：列表页/文章页/维护页/启发式/link-title
+- **Makefile + CI**：纳入 node 测试
+- 实测：cs 策略 9/10（就业信息栏无效）；ndwy 维护页识别为抓取失败
+- 测试：74 Python + 5 Node = 79
+
+### [AI] 待办
+- [ ] 真实端到端验证闭环（Agent 探索→verify→修正，需真实 LLM）
+- [ ] 无效入口自动剔除策略的回归验证
+
 ---
