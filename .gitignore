@@ -9,6 +9,13 @@ __pycache__/
 
 # Agent 运行产物
 explorer-agent/traces/
+query-agent/traces/
+
+# RAG / 备份运行产物（Agent 运行时生成，非源码）
+crawler/data/rag/
+crawler/data/backups/
+data/rag/
+data/backups/
 
 # 旧 src 暂留（仅根目录，不影响 explorer-agent/src）
 /src/
