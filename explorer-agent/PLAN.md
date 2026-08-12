@@ -129,7 +129,20 @@
 **依赖:** 全部
 **实现要点:** 用不同 agent 新 session 仅凭 SPEC+PLAN 实现 B1 部分 task；记录暴露的 spec 缺陷；写反思报告。
 
-- [ ] 待完成
+- [x] 完成（commit `040c79c` + 后续）：冷启动停 8 处，SPEC §3.2b 补 RAG 语义，SPEC_PROCESS/REFLECTION/AGENT_LOG/README 全完成
+
+## Task B6: WebUI 单页表单（作业 §五.9 硬性要求）
+
+**Files:**
+- Create: `explorer-agent/webui.py`
+- Modify: `explorer-agent/query.py`（抽 `answer()` 复用）
+- Test: `explorer-agent/tests/test_webui.py`
+
+**依赖:** Task B1-B3
+**实现要点:** 标准库 http.server 单页表单；POST 问题 → `query.answer()` → 展示答案；零第三方依赖（利于 Docker）。
+
+- [x] 完成（commit 待补）：webui.py + answer() 重构，2 测试，58 全过
+- [ ] 待用户：WebUI 部署 + 真实验收
 
 ---
 
@@ -141,6 +154,9 @@ B1 RAGStore ──► B2 rag_tools ──► B3 query.py
                        │
                        ▼
                     B5 冷启动+文档
+                       │
+                       ▼
+                    B6 WebUI
 ```
 
 - **可并行**：B4 的凭据存储部分可与 B1 并行
@@ -149,4 +165,5 @@ B1 RAGStore ──► B2 rag_tools ──► B3 query.py
 ## 当前进度
 
 - A 组：全部完成（41 测试通过）
-- B 组：B1-B4 完成（56 测试通过），B5 进行中
+- B 组：B1-B6 完成（58 测试通过）
+- 待用户：WebUI 部署、CI 实跑、Docker 验证、真实验收
