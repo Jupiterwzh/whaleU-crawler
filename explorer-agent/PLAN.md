@@ -70,129 +70,45 @@
   - `is_stale() -> bool` — 距上次刷新 > interval
   - `refresh()` — 增量索引新分片 + 更新 meta
 
-- [ ] **Step 1: 写失败测试**
-
-```python
-# tests/test_ragstore.py
-import json
-from src.rag.ragstore import RAGStore
-
-
-def test_ingest_and_search(tmp_path):
-    store = RAGStore(str(tmp_path), refresh_interval_min=30)
-    store.ingest([{"title": "考试安排通知", "content": "期末考试安排", "url": "u1", "domain": "cs.nju.edu.cn", "date": "2026-03-01"}])
-    hits = store.search("考试")
-    assert len(hits) >= 1
-    assert hits[0]["title"] == "考试安排通知"
-
-
-def test_search_no_match(tmp_path):
-    store = RAGStore(str(tmp_path))
-    store.ingest([{"title": "考试", "content": "考试安排", "url": "u1", "domain": "d"}])
-    assert store.search("奖学金") == []
-
-
-def test_is_stale_fresh(tmp_path, monkeypatch):
-    import time
-    store = RAGStore(str(tmp_path), refresh_interval_min=30)
-    store.ingest([{"title": "t", "content": "c", "url": "u", "domain": "d", "date": "2026-01-01"}])
-    store.refresh()
-    assert store.is_stale() is False
-
-
-def test_dedup(tmp_path):
-    store = RAGStore(str(tmp_path))
-    rec = {"title": "t", "content": "c", "url": "u1", "domain": "d", "date": "2026-01-01"}
-    store.ingest([rec])
-    store.ingest([rec])
-    assert store._doc_count() == 1
-```
-
-- [ ] **Step 2: 运行测试确认失败**
-
-```bash
-cd /home/wangzhiheng/whaleU-crawler/explorer-agent && python -m pytest tests/test_ragstore.py -v
-```
-Expected: FAIL（ModuleNotFoundError）
-
-- [ ] **Step 3: 实现 RAGStore**
-
-要点：
-- 分词：中文 bigram（2-gram）+ 英文按空格/标点
-- 倒排索引：`{term: {doc_id: tf}}`，文档 `{doc_id: {title,url,date,content,domain,valid}}`
-- 检索打分：简化 BM25（tf × idf），返回 top_k
-- `is_stale()`：`time.time() - meta.last_refresh > refresh_interval_min*60`
-- `refresh()`：扫描 `docs/` 未索引分片 → 追加索引 → 更新 meta
-- current 索引只含 `valid:true` 且未过期；archive 含全部
-- `_doc_count()` 返回 docs 总数（供测试）
-
-- [ ] **Step 4: 运行测试确认通过**
-
-```bash
-cd /home/wangzhiheng/whaleU-crawler/explorer-agent && python -m pytest tests/test_ragstore.py -v
-```
-Expected: 4 passed
-
-- [ ] **Step 5: 提交**
-
-```bash
-cd /home/wangzhiheng/whaleU-crawler && git add explorer-agent/src/rag/ explorer-agent/tests/test_ragstore.py && git commit -m "feat: RAGStore — JSONL doc store + inverted index + stale/refresh"
-```
+- [x] 完成（commit `8ea830a`）：RAGStore 全实现，4 测试通过
 
 ## Task B2: query-agent 工具装配
 
 **Files:**
 - Create: `explorer-agent/src/tools/rag_tools.py`
-- Modify: `explorer-agent/src/harness.py`（支持多工具工厂）
-- Modify: `explorer-agent/agent.yaml`（query 段）
 - Test: `explorer-agent/tests/test_rag_tools.py`
 
 **Interfaces:**
 - Consumes: `RAGStore`（Task B1）
-- Produces: `make_rag_tools(rag_store)` → `[Tool(rag_search), Tool(run_crawler)]`
+- Produces: `make_rag_tools(rag_store, crawler_script)` → `[Tool(rag_search), Tool(run_crawler)]`
 
-- [ ] **Step 1: 写失败测试**
-
-```python
-# tests/test_rag_tools.py
-from src.rag.ragstore import RAGStore
-from src.tools.rag_tools import make_rag_tools
-
-
-def test_rag_search_tool(tmp_path):
-    store = RAGStore(str(tmp_path))
-    store.ingest([{"title": "通知", "content": "关于考试", "url": "u", "domain": "d", "date": "2026-01-01"}])
-    tools = make_rag_tools(store)
-    rag_search = [t for t in tools if t.name == "rag_search"][0]
-    result = rag_search.handler({"query": "考试", "top_k": 3})
-    assert "通知" in result
-```
-
-- [ ] **Step 2: 失败 → Step 3: 实现 → Step 4: 通过 → Step 5: 提交**
-
-实现要点：`rag_search` 调 `store.search()`；`run_crawler` 用 `subprocess` 调 `CRAWLER_SCRIPT` 后 ingest 输出 JSONL。
+- [x] 完成（commit `860b674`）：rag_search/run_crawler 工具，3 测试通过
 
 ## Task B3: query.py 入口
 
 **Files:**
 - Create: `explorer-agent/query.py`
-- Modify: `explorer-agent/agent.yaml`
+- Modify: `explorer-agent/src/harness.py`（rag_store 可选参数）
 - Test: `explorer-agent/tests/test_query.py`
 
 **依赖:** Task B1, B2
 **实现要点:** 复用 AgentLoop/harness；装配 rag/爬虫/文件工具；`RAGStore.is_stale() → refresh()`；输出答案。
+
+- [x] 完成（commit `a3ad4a3`）：query.py 入口 + harness rag 支持，4 测试 + 回归通过
 
 ## Task B4: 工程收尾
 
 **Files:**
 - Create: `Makefile`（`make test` = pytest）
 - Create: `.gitlab-ci.yml`（`unit-test` job）
-- Create: `pyproject.toml` / `setup.py`（分发）
-- Create: `explorer-agent/keys.py`（钥匙串/加密凭据存储）
-- Modify: `README.md`、`.env.example`
+- Create: `Dockerfile` / `.dockerignore`（容器分发）
+- Create: `explorer-agent/src/keys.py`（keyring 凭据存储）
+- Modify: `README.md`、`.env.example`、`requirements.txt`
 
 **依赖:** 全部 B1-B3
-**实现要点:** 凭据安全存储（keyring 或加密文件）；分发配置；CI。
+**实现要点:** 凭据安全存储（keyring 钥匙串 + getpass 隐藏录入 + get/set/clear）；Docker 分发（docker build + docker run）；CI（unit-test job）。
+
+- [x] 完成（commit `37d8f9f`）：Makefile/CI/Docker/keyring 全部实现，56 测试通过
 
 ## Task B5: 冷启动验证 + 过程文档
 
@@ -203,6 +119,8 @@ def test_rag_search_tool(tmp_path):
 
 **依赖:** 全部
 **实现要点:** 用不同 agent 新 session 仅凭 SPEC+PLAN 实现 B1 部分 task；记录暴露的 spec 缺陷；写反思报告。
+
+- [ ] 待完成
 
 ---
 
@@ -222,4 +140,4 @@ B1 RAGStore ──► B2 rag_tools ──► B3 query.py
 ## 当前进度
 
 - A 组：全部完成（41 测试通过）
-- B 组：B1 进行中
+- B 组：B1-B4 完成（56 测试通过），B5 进行中
