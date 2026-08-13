@@ -716,3 +716,24 @@ data/checkpoints/<domain>.crash.json    特殊暂存 0/1
 - **分类精度待调优**：部分带 list 后缀的页面判为 middle（如 /1716/list.htm）——--verify 兜底验证最终入口，精度可后续用真实数据调
 
 ---
+
+## 2026-08-13 会话十八：crawl_structure 完善（分类升级 + 用户选择交互）
+
+### [人] 需求
+- URL 与首页锚文本对应 + 编号，方便选择入口
+- 用户可手动补充入口入策略；确认为信息页的也要进入结构探索；不确定的深入确认
+- 首页预览要追踪到真实列表页
+
+### [AI] 实现
+- **_classify_page 升级**：多模式通知检测（news_title/link-title/news_date/news_meta/dataList/li+date 合计），URL 含 list 后缀且内容≥1 才算列表页（减少误判）
+- **节点加 index + title（锚文本）+ type**：遍历结果 URL 与首页文字对应
+- **用户选择交互** `_prompt_user_selection`：遍历后展示编号+锚文本清单，用户输入编号选为入口，返回 selected；非交互 EOFError 安全跳过
+- 测试 10 个（含选择交互纯函数测试）；真实遍历 cs 16 节点，用户选"2,3"正确返回
+- 测试教训：handler 集成测试在 pytest 环境对 input patch 有边界问题，改测 `_prompt_user_selection` 纯函数（可靠）
+
+### [AI] 待办（待办.md）
+- [ ] 首页预览追踪（首页通知预览 → 追踪真实列表页）未实现
+- [ ] 信息页/不确定页深入逻辑未实现
+- [ ] 分类精度（URL list 后缀 + 内容阈值）待用户确认是否满意
+
+---
