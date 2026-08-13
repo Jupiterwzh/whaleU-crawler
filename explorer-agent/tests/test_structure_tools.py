@@ -148,3 +148,27 @@ def test_user_selection_empty_input(monkeypatch):
     nodes = [{"index": 1, "url": "https://cs.nju.edu.cn/", "type": "list", "depth": 0}]
     monkeypatch.setattr("builtins.input", lambda prompt="": "")
     assert _prompt_user_selection(nodes) == []
+
+
+def test_max_links_truncated_flag():
+    """max_links 不足时返回 truncated 提示。"""
+    from src.tools.structure_tools import crawl_structure
+    # 首页含很多链接，max_links=2 会截断
+    many_links_html = "<html><body>" + "".join(f'<a href="/n{i}.htm">链接{i}</a>' for i in range(10)) + "</body></html>"
+    def fake_get(url, **kw):
+        r = type("R", (), {})(); r.text = many_links_html; r.raise_for_status = lambda: None; return r
+    with patch("httpx.get", side_effect=fake_get):
+        tree = crawl_structure("https://cs.nju.edu.cn/", max_depth=1, max_links=2)
+    assert tree.get("truncated") is True
+    assert "max_links" in tree.get("hint", "")
+
+
+def test_no_truncation_with_large_limit():
+    """max_links 足够时不截断。"""
+    from src.tools.structure_tools import crawl_structure
+    html = "<html><body><a href='/a.htm'>a</a><a href='/b.htm'>b</a></body></html>"
+    def fake_get(url, **kw):
+        r = type("R", (), {})(); r.text = html; r.raise_for_status = lambda: None; return r
+    with patch("httpx.get", side_effect=fake_get):
+        tree = crawl_structure("https://cs.nju.edu.cn/", max_depth=1, max_links=30)
+    assert "truncated" not in tree

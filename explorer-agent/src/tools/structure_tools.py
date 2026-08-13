@@ -116,6 +116,7 @@ def crawl_structure(root_url: str, max_depth: int = 4, max_links: int = 30) -> d
     domain = urlparse(root).hostname
     visited: set[str] = set()
     nodes: list[dict] = []
+    truncated = False
     queue: deque[tuple[str, int, str]] = deque([(root, 0, "")])
 
     while queue:
@@ -140,11 +141,18 @@ def crawl_structure(root_url: str, max_depth: int = 4, max_links: int = 30) -> d
         # 例外：根页（depth 0）即使判为 list 也递归，因为首页通常兼作导航入口。
         if depth == 0 or page_type not in ("list", "detail", "other"):
             if depth < max_depth:
-                for link, text in _extract_links(html, url, domain)[:max_links]:
+                all_links = _extract_links(html, url, domain)
+                if len(all_links) > max_links:
+                    truncated = True
+                for link, text in all_links[:max_links]:
                     if link not in visited:
                         queue.append((link, depth + 1, text))
 
-    return {"domain": domain, "root": root, "nodes": nodes}
+    result = {"domain": domain, "root": root, "nodes": nodes}
+    if truncated:
+        result["truncated"] = True
+        result["hint"] = f"部分页面链接超过 max_links={max_links} 被截断，如需完整结构请用更大 max_links 重试"
+    return result
 
 
 def _prompt_user_selection(nodes: list[dict]) -> list[dict]:
