@@ -98,3 +98,29 @@ def test_tool_handler_returns_json_string():
     assert isinstance(out, str)
     parsed = _json.loads(out)
     assert parsed["domain"] == "cs.nju.edu.cn"
+
+
+def test_classify_url_list_suffix():
+    """URL 含 list.htm 后缀即视为列表页（苏迪 CMS 约定）。"""
+    # 即使 HTML 无类名特征，list.htm 也算列表页
+    assert _classify_page("<html><body><p>内容</p></body></html>", "https://cs.nju.edu.cn/1716/list.htm") == "list"
+    assert _classify_page("<html><body><p>内容</p></body></html>", "https://cs.nju.edu.cn/1716/list2.htm") == "list"
+    # 非 list 后缀不误判
+    assert _classify_page("<html><body><p>内容</p></body></html>", "https://cs.nju.edu.cn/intro.htm") in ("middle", "other")
+
+
+def test_nodes_have_title_and_index():
+    """节点含 index（编号）与 title（锚文本）。"""
+    pages = {"https://cs.nju.edu.cn/": HOME_HTML, "https://cs.nju.edu.cn/1702/list.htm": LIST_HTML}
+    def fake_get(url, **kw):
+        resp = type("R", (), {})()
+        resp.text = pages.get(url, DETAIL_HTML)
+        resp.raise_for_status = lambda: None
+        return resp
+    with patch("httpx.get", side_effect=fake_get):
+        tree = crawl_structure("https://cs.nju.edu.cn/", max_depth=1)
+    assert all("index" in n and "title" in n for n in tree["nodes"])
+    # 首页节点 index=1，title 为空（根）
+    assert tree["nodes"][0]["index"] == 1
+    # 院内公告节点应有锚文本"院内公告"
+    assert any(n["title"] == "院内公告" for n in tree["nodes"])
