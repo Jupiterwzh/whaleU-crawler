@@ -115,20 +115,37 @@ def _extract_links(html: str, base_url: str, domain: str) -> list[tuple[str, str
     return list(links.items())
 
 
-def _is_info_page(anchor: str, url: str) -> bool:
+def _is_info_page(anchor: str, url: str, info_keywords=None) -> bool:
     """判断锚文本/URL 是否指向信息栏目（简介/师资/机构等，非通知）。"""
+    kws = info_keywords or _INFO_KEYWORDS
     text = (anchor or "") + " " + url
-    return any(kw in text for kw in _INFO_KEYWORDS)
+    return any(kw in text for kw in kws)
 
 
-def _categorize_list(anchor: str, url: str) -> str:
+def _categorize_list(anchor: str, url: str, info_keywords=None, notice_keywords=None) -> str:
     """列表页分类：按锚文本关键词标注 notice/info。仅参考，不强制。"""
+    info_kws = info_keywords or _INFO_KEYWORDS
+    notice_kws = notice_keywords or _NOTICE_KEYWORDS
     text = (anchor or "") + " " + url
-    if any(kw in text for kw in _NOTICE_KEYWORDS):
+    if any(kw in text for kw in notice_kws):
         return "notice"
-    if any(kw in text for kw in _INFO_KEYWORDS):
+    if any(kw in text for kw in info_kws):
         return "info"
     return "notice"  # 默认视为 notice（偏保守，提示 Agent 可爬）
+
+
+def _load_keywords():
+    """从 keywords.json 加载 info/notice 关键词（独立配置文件），无则用内置默认。"""
+    try:
+        from pathlib import Path
+        kws_path = Path(__file__).resolve().parent.parent / "keywords.json"
+        import json
+        data = json.loads(kws_path.read_text(encoding="utf-8"))
+        info = data.get("infoKeywords") or list(_INFO_KEYWORDS)
+        notice = data.get("noticeKeywords") or list(_NOTICE_KEYWORDS)
+        return tuple(info), tuple(notice)
+    except Exception:
+        return _INFO_KEYWORDS, _NOTICE_KEYWORDS
 
 
 def crawl_structure(root_url: str, max_depth: int = 4, max_links: int = 30) -> dict:
@@ -142,6 +159,7 @@ def crawl_structure(root_url: str, max_depth: int = 4, max_links: int = 30) -> d
     """
     root = _normalize_url(root_url)
     domain = urlparse(root).hostname
+    info_kws, notice_kws = _load_keywords()
     visited: set[str] = set()
     nodes: list[dict] = []
     truncated = False
@@ -171,13 +189,13 @@ def crawl_structure(root_url: str, max_depth: int = 4, max_links: int = 30) -> d
                           "preview_count": preview_count})
         else:
             # 锚文本含信息栏目关键词且非列表页 → 标记 info（不深挖）
-            if page_type != "list" and _is_info_page(anchor, url):
+            if page_type != "list" and _is_info_page(anchor, url, info_kws):
                 page_type = "info"
             node = {"index": len(nodes) + 1, "url": url, "title": anchor,
                     "type": page_type, "depth": depth}
             # 列表页加 category（notice/info 仅参考）
             if page_type == "list":
-                node["category"] = _categorize_list(anchor, url)
+                node["category"] = _categorize_list(anchor, url, info_kws, notice_kws)
             nodes.append(node)
 
         # home/列表页/详情页/info/other 不递归；外链不深入。
