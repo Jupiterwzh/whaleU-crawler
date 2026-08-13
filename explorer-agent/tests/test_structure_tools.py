@@ -172,3 +172,34 @@ def test_no_truncation_with_large_limit():
     with patch("httpx.get", side_effect=fake_get):
         tree = crawl_structure("https://cs.nju.edu.cn/", max_depth=1, max_links=30)
     assert "truncated" not in tree
+
+
+def test_root_marked_home_not_list():
+    """首页标记为 home（不作为列表页候选），且含 preview_count。"""
+    from src.tools.structure_tools import crawl_structure
+    pages = {"https://cs.nju.edu.cn/": LIST_HTML}  # 首页即使含 news_title 也标 home
+    def fake_get(url, **kw):
+        r = type("R", (), {})(); r.text = pages.get(url, "<html><body></body></html>")
+        r.raise_for_status = lambda: None
+        return r
+    with patch("httpx.get", side_effect=fake_get):
+        tree = crawl_structure("https://cs.nju.edu.cn/", max_depth=1)
+    root = tree["nodes"][0]
+    assert root["type"] == "home"
+    assert "preview_count" in root
+    assert root["preview_count"] >= 1  # LIST_HTML 含通知预览
+
+
+def test_home_not_in_selection_candidates():
+    """home 类型不进用户选择候选（首页不作为入口）。"""
+    import io, contextlib
+    from unittest.mock import patch as mock_patch
+    from src.tools.structure_tools import _prompt_user_selection
+    nodes = [
+        {"index": 1, "url": "https://cs.nju.edu.cn/", "type": "home", "depth": 0},
+        {"index": 2, "url": "https://cs.nju.edu.cn/1702/list.htm", "type": "list", "depth": 1},
+    ]
+    with contextlib.redirect_stdout(io.StringIO()), \
+         mock_patch("builtins.input", return_value="1,2"):
+        selected = _prompt_user_selection(nodes)
+    assert all(n["index"] == 2 for n in selected)

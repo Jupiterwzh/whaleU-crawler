@@ -134,12 +134,20 @@ def crawl_structure(root_url: str, max_depth: int = 4, max_links: int = 30) -> d
             continue
 
         page_type = _classify_page(html, url)
-        nodes.append({"index": len(nodes) + 1, "url": url, "title": anchor,
-                      "type": page_type, "depth": depth})
+        # 根页（depth 0）标记为 home，不作为列表页候选；统计首页通知预览数
+        if depth == 0:
+            page_type = "home"
+            preview_count = _count_notice_links(html)
+            nodes.append({"index": len(nodes) + 1, "url": url, "title": anchor,
+                          "type": page_type, "depth": depth,
+                          "preview_count": preview_count})
+        else:
+            nodes.append({"index": len(nodes) + 1, "url": url, "title": anchor,
+                          "type": page_type, "depth": depth})
 
-        # 列表页/详情页/other 不递归；外链不深入。
-        # 例外：根页（depth 0）即使判为 list 也递归，因为首页通常兼作导航入口。
-        if depth == 0 or page_type not in ("list", "detail", "other"):
+        # home/列表页/详情页/other 不递归；外链不深入。
+        # 例外：根页（home，depth 0）必须递归，因为首页兼作导航入口。
+        if page_type == "home" or page_type not in ("list", "detail", "other"):
             if depth < max_depth:
                 all_links = _extract_links(html, url, domain)
                 if len(all_links) > max_links:
@@ -159,6 +167,7 @@ def _prompt_user_selection(nodes: list[dict]) -> list[dict]:
     """展示候选列表页，让用户选择要加入策略的入口。返回选中的节点列表。
 
     仅交互式（stdin 可用）时询问；非交互（EOFError）返回空。
+    只允许从 list 类型候选中选择（home/中间页/详情页不作为入口）。
     """
     candidates = [n for n in nodes if n["type"] == "list"]
     if not candidates:
@@ -178,7 +187,7 @@ def _prompt_user_selection(nodes: list[dict]) -> list[dict]:
         part = part.strip()
         if part.isdigit():
             indices.add(int(part))
-    return [n for n in nodes if n.get("index") in indices]
+    return [n for n in candidates if n.get("index") in indices]
 
 
 def make_structure_tools() -> list[Tool]:
