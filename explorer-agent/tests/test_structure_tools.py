@@ -126,3 +126,25 @@ def test_nodes_have_title_and_index():
     assert tree["nodes"][0]["index"] == 1
     # 院内公告节点应有锚文本"院内公告"
     assert any(n["title"] == "院内公告" for n in tree["nodes"])
+
+
+def test_user_selection_adds_entries(monkeypatch):
+    """用户输入编号 → 选为入口加入策略。"""
+    from src.tools.structure_tools import _prompt_user_selection
+    nodes = [
+        {"index": 1, "url": "https://cs.nju.edu.cn/", "type": "middle", "depth": 0},
+        {"index": 2, "url": "https://cs.nju.edu.cn/1702/list.htm", "type": "list", "depth": 1},
+        {"index": 3, "url": "https://cs.nju.edu.cn/intro.htm", "type": "detail", "depth": 1},
+    ]
+    monkeypatch.setattr("builtins.input", lambda prompt="": "2")
+    selected = _prompt_user_selection(nodes)
+    assert len(selected) == 1
+    assert selected[0]["url"] == "https://cs.nju.edu.cn/1702/list.htm"
+
+
+def test_user_selection_empty_input(monkeypatch):
+    """用户直接回车 → 不选任何入口。"""
+    from src.tools.structure_tools import _prompt_user_selection
+    nodes = [{"index": 1, "url": "https://cs.nju.edu.cn/", "type": "list", "depth": 0}]
+    monkeypatch.setattr("builtins.input", lambda prompt="": "")
+    assert _prompt_user_selection(nodes) == []

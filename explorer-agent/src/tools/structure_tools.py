@@ -147,10 +147,39 @@ def crawl_structure(root_url: str, max_depth: int = 4, max_links: int = 30) -> d
     return {"domain": domain, "root": root, "nodes": nodes}
 
 
+def _prompt_user_selection(nodes: list[dict]) -> list[dict]:
+    """展示候选列表页，让用户选择要加入策略的入口。返回选中的节点列表。
+
+    仅交互式（stdin 可用）时询问；非交互（EOFError）返回空。
+    """
+    candidates = [n for n in nodes if n["type"] == "list"]
+    if not candidates:
+        return []
+    print("\n=== 候选列表页入口（可加入策略）===")
+    for n in candidates:
+        title = n.get("title") or "(无标题)"
+        print(f"  [{n['index']:>2}] {title[:20]:<22} {n['url'][:50]}")
+    try:
+        ans = input("请输入要加入策略的入口编号（逗号分隔，回车跳过）: ").strip()
+    except EOFError:
+        return []
+    if not ans:
+        return []
+    indices = set()
+    for part in ans.split(","):
+        part = part.strip()
+        if part.isdigit():
+            indices.add(int(part))
+    return [n for n in nodes if n.get("index") in indices]
+
+
 def make_structure_tools() -> list[Tool]:
     def handler(url, max_depth=4, max_links=30):
         import json as _json
-        return _json.dumps(crawl_structure(url, max_depth, max_links), ensure_ascii=False, indent=2)
+        tree = crawl_structure(url, max_depth, max_links)
+        selected = _prompt_user_selection(tree["nodes"])
+        tree["selected"] = selected
+        return _json.dumps(tree, ensure_ascii=False, indent=2)
 
     return [
         Tool(
