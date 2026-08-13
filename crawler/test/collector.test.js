@@ -47,3 +47,17 @@ test('link-title 列表页识别', () => {
   </ul>`;
   assert.equal(isNotificationListPage(linkHtml, 'link-title'), true);
 });
+
+test('微信外链不作为通知提取', () => {
+  const { extractNotices } = require('../src/collectors/collector');
+  // 含一个微信外链 + 一个站内通知
+  const html = `
+  <ul>
+    <li class="news"><span class="news_title"><a href="https://cs.nju.edu.cn/a/page.htm">站内通知一</a></span><span class="news_meta">2026-01-01</span></li>
+    <li class="news"><span class="news_title"><a href="https://mp.weixin.qq.com/s/abc">微信公众号文章</a></span><span class="news_meta">2026-01-02</span></li>
+  </ul>`;
+  const notices = extractNotices(html, 'https://cs.nju.edu.cn/');
+  assert.equal(notices.length, 1);
+  assert.equal(notices[0].href, 'https://cs.nju.edu.cn/a/page.htm');
+  assert.ok(!notices.some(n => /weixin/.test(n.href)));
+});

@@ -128,6 +128,18 @@ function makeAbsolute(href, baseUrl) {
 }
 
 /**
+ * 判断 URL 是否指向微信公众号外链（mp.weixin.qq.com 等）。
+ * 小组其他成员已实现公众号爬取，故这里不作为通知提取。
+ */
+function _isWechatUrl(href) {
+  if (!href) return false;
+  try {
+    const host = new URL(href).hostname;
+    return /(^|\.)weixin\.qq\.com$/i.test(host) || /(^|\.)wechat\.com$/i.test(host);
+  } catch { return false; }
+}
+
+/**
  * 找到 JS 变量 dataList=[{...}] 中 infolist 数组的内容
  * 返回字符串片段（近似 JSON 格式，需进一步处理）
  */
@@ -230,7 +242,8 @@ function extractNotices(html, baseUrl) {
     if (parsed.length > 0) {
       for (const n of parsed) {
         const href = makeAbsolute(n.href || '', baseUrl);
-        if (href) allResults.push({ href, title: n.title || n.listtitle || '', date: n.datetime || n.date || null, confidence: 95, source: 'dataList' });
+        if (!href || _isWechatUrl(href)) continue;
+        allResults.push({ href, title: n.title || n.listtitle || '', date: n.datetime || n.date || null, confidence: 95, source: 'dataList' });
       }
     }
   }
@@ -241,7 +254,7 @@ function extractNotices(html, baseUrl) {
   while ((m = newsTitleRegex.exec(html)) !== null) {
     const href = makeAbsolute(m[1], baseUrl);
     const title = (m[2] || m[3] || '').replace(/<[^>]+>/g, '').trim();
-    if (href && title) allResults.push({ href, title, date: null, confidence: 90, source: 'news_title' });
+    if (href && title && !_isWechatUrl(href)) allResults.push({ href, title, date: null, confidence: 90, source: 'news_title' });
   }
   // 匹配 news_date 并就近分配
   const dateRegex = /<span[^>]+class=["'][^"']*news_date[^"']*["'][^>]*>([^<]+)<\/span>/gi;
@@ -261,6 +274,7 @@ function extractNotices(html, baseUrl) {
     const title = m[2].replace(/<[^>]+>/g, '').trim();
     const date = m[3] ? m[3].replace(/<[^>]+>/g, '').trim() : null;
     if (!title || title.length < 6 || /^[a-zA-Z\s]{1,10}$/.test(title)) continue;
+    if (_isWechatUrl(href)) continue;
     const navKeywords = ['学院概览', '学院简介', '师资队伍', '科学研究', '人才培养', '党的建设', '热门', '热点', '专家', '教授', '首页', '返回', '更多', '栏目', '机构', '管理', '联系我们', 'English'];
     if (navKeywords.some(k => title.includes(k)) && title.length < 12) continue;
     allResults.push({ href, title, date, confidence: date ? 75 : 60, source: 'article_inline' });
