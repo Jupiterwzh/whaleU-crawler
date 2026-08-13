@@ -74,7 +74,16 @@
 
 ### 3.4 explorer-agent（已有，策略 Agent）
 
-按现 SPEC 功能保留：探索网站结构、生成/更新策略 JSON，经 FileStore 管理备份/暂存/崩溃恢复。
+| 项 | 内容 |
+|----|------|
+| 输入 | 站点根 URL 或任务文本 |
+| 行为 | BFS 网站结构遍历（`crawl_structure` 工具，确定性返回结构树，节点含编号/锚文本/类型/分类）；页面分类（home/list/middle/detail/info）；防循环、外链停止、深度/链接上限 |
+| 验证闭环 | 生成策略后调 `--verify` 实测每入口（isNotificationListPage + 通知数），据报告剔除无效入口 |
+| 经验库 | `experiences.json` 跨站点通用规律（CMS 识别/踩坑/部门类型），每次探索注入 goal，探索后人工确认沉淀新规律 |
+| 用户交互 | 遍历后展示编号清单，用户选择入口；关键词独立配置 `keywords.json` |
+| 输出 | 网站结构树 + 策略 JSON（meta/entries/pagination/extraction/notes） |
+| 边界 | 已有策略的站点不重复探索；维护页/需登录页识别为不可爬 |
+| 错误处理 | 抓取失败标注原因；LLM 失败重试；经验写入失败不影响主流程 |
 
 ## 4. 非功能性需求
 
