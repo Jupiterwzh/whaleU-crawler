@@ -226,3 +226,23 @@ def test_info_page_marked_and_not_recursed():
     assert any("intro.htm" in n["url"] for n in info_nodes)
     # info 页不深挖：intro.htm 被访问，但它没有子页面再被深入
     assert len(tree["nodes"]) >= 3  # home + intro(info) + list
+
+
+def test_list_category_notice_vs_info():
+    """列表页 category 按锚文本标注（notice/info），仅参考。"""
+    from src.tools.structure_tools import crawl_structure
+    home = "<html><body><a href='/tzgg/list.htm'>通知公告</a><a href='/jsgk/list.htm'>学院简介</a></body></html>"
+    tzgg_html = "<html><body><a class='news_title'>a</a><a class='news_title'>b</a><a class='news_title'>c</a></body></html>"
+    jsgk_html = "<html><body><a class='news_title'>x</a><a class='news_title'>y</a><a class='news_title'>z</a></body></html>"
+    pages = {"https://cs.nju.edu.cn/": home,
+             "https://cs.nju.edu.cn/tzgg/list.htm": tzgg_html,
+             "https://cs.nju.edu.cn/jsgk/list.htm": jsgk_html}
+    def fake_get(url, **kw):
+        r = type("R", (), {})(); r.text = pages.get(url, "<html><body></body></html>")
+        r.raise_for_status = lambda: None
+        return r
+    with patch("httpx.get", side_effect=fake_get):
+        tree = crawl_structure("https://cs.nju.edu.cn/", max_depth=2)
+    by_url = {n["url"]: n for n in tree["nodes"]}
+    assert by_url["https://cs.nju.edu.cn/tzgg/list.htm"]["category"] == "notice"
+    assert by_url["https://cs.nju.edu.cn/jsgk/list.htm"]["category"] == "info"

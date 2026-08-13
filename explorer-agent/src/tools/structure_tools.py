@@ -23,8 +23,15 @@ _DETAIL_SIGNS = (
 )
 # 信息栏目关键词（确定非通知公告的栏目，如简介/师资/机构）
 _INFO_KEYWORDS = (
-    "简介", "概览", "师资", "教师", "领导", "机构", "部门", "委员会",
+    "简介", "概览", "师资", "教师", "教授", "副教授", "讲师", "博士后",
+    "领导", "机构", "部门", "委员会", "群众团体",
     "党建", "工会", "联系", "招生", "就业", "下载", "办事", "服务",
+    "校友", "基金", "捐赠",
+)
+# 通知类关键词（列表页锚文本含这些 → category=notice，仅参考不强制）
+_NOTICE_KEYWORDS = (
+    "通知", "公告", "新闻", "动态", "公示", "信息", "工作", "活动",
+    "消息", "报道", "通知公告",
 )
 _UA = "Mozilla/5.0 (compatible; explorer-agent/0.1)"
 
@@ -114,6 +121,16 @@ def _is_info_page(anchor: str, url: str) -> bool:
     return any(kw in text for kw in _INFO_KEYWORDS)
 
 
+def _categorize_list(anchor: str, url: str) -> str:
+    """列表页分类：按锚文本关键词标注 notice/info。仅参考，不强制。"""
+    text = (anchor or "") + " " + url
+    if any(kw in text for kw in _NOTICE_KEYWORDS):
+        return "notice"
+    if any(kw in text for kw in _INFO_KEYWORDS):
+        return "info"
+    return "notice"  # 默认视为 notice（偏保守，提示 Agent 可爬）
+
+
 def crawl_structure(root_url: str, max_depth: int = 4, max_links: int = 30) -> dict:
     """BFS 遍历站点，返回结构树。
 
@@ -156,8 +173,12 @@ def crawl_structure(root_url: str, max_depth: int = 4, max_links: int = 30) -> d
             # 锚文本含信息栏目关键词且非列表页 → 标记 info（不深挖）
             if page_type != "list" and _is_info_page(anchor, url):
                 page_type = "info"
-            nodes.append({"index": len(nodes) + 1, "url": url, "title": anchor,
-                          "type": page_type, "depth": depth})
+            node = {"index": len(nodes) + 1, "url": url, "title": anchor,
+                    "type": page_type, "depth": depth}
+            # 列表页加 category（notice/info 仅参考）
+            if page_type == "list":
+                node["category"] = _categorize_list(anchor, url)
+            nodes.append(node)
 
         # home/列表页/详情页/info/other 不递归；外链不深入。
         # 例外：根页（home，depth 0）必须递归，因为首页兼作导航入口。
