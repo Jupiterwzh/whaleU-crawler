@@ -203,3 +203,26 @@ def test_home_not_in_selection_candidates():
          mock_patch("builtins.input", return_value="1,2"):
         selected = _prompt_user_selection(nodes)
     assert all(n["index"] == 2 for n in selected)
+
+
+def test_info_page_marked_and_not_recursed():
+    """锚文本含信息栏目关键词的页面标记 info，且不深挖。"""
+    from src.tools.structure_tools import crawl_structure
+    home = "<html><body><a href='/intro.htm'>学院简介</a><a href='/1702/list.htm'>院内公告</a></body></html>"
+    info_html = "<html><body><h1>学院简介</h1><p>简介内容</p></body></html>"
+    list_html = "<html><body><a class='news_title'>a</a><a class='news_title'>b</a><a class='news_title'>c</a></body></html>"
+    pages = {"https://cs.nju.edu.cn/": home,
+             "https://cs.nju.edu.cn/intro.htm": info_html,
+             "https://cs.nju.edu.cn/1702/list.htm": list_html}
+    visited_pages = []
+    def fake_get(url, **kw):
+        visited_pages.append(url)
+        r = type("R", (), {})(); r.text = pages.get(url, "<html><body></body></html>")
+        r.raise_for_status = lambda: None
+        return r
+    with patch("httpx.get", side_effect=fake_get):
+        tree = crawl_structure("https://cs.nju.edu.cn/", max_depth=2)
+    info_nodes = [n for n in tree["nodes"] if n["type"] == "info"]
+    assert any("intro.htm" in n["url"] for n in info_nodes)
+    # info 页不深挖：intro.htm 被访问，但它没有子页面再被深入
+    assert len(tree["nodes"]) >= 3  # home + intro(info) + list

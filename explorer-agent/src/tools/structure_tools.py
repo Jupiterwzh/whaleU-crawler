@@ -21,6 +21,11 @@ _DETAIL_SIGNS = (
     re.compile(r'class=["\']article["\']', re.I),
     re.compile(r'<h1[^>]*>[^<]{4,}</h1>', re.I),
 )
+# 信息栏目关键词（确定非通知公告的栏目，如简介/师资/机构）
+_INFO_KEYWORDS = (
+    "简介", "概览", "师资", "教师", "领导", "机构", "部门", "委员会",
+    "党建", "工会", "联系", "招生", "就业", "下载", "办事", "服务",
+)
 _UA = "Mozilla/5.0 (compatible; explorer-agent/0.1)"
 
 
@@ -103,6 +108,12 @@ def _extract_links(html: str, base_url: str, domain: str) -> list[tuple[str, str
     return list(links.items())
 
 
+def _is_info_page(anchor: str, url: str) -> bool:
+    """判断锚文本/URL 是否指向信息栏目（简介/师资/机构等，非通知）。"""
+    text = (anchor or "") + " " + url
+    return any(kw in text for kw in _INFO_KEYWORDS)
+
+
 def crawl_structure(root_url: str, max_depth: int = 4, max_links: int = 30) -> dict:
     """BFS 遍历站点，返回结构树。
 
@@ -142,12 +153,15 @@ def crawl_structure(root_url: str, max_depth: int = 4, max_links: int = 30) -> d
                           "type": page_type, "depth": depth,
                           "preview_count": preview_count})
         else:
+            # 锚文本含信息栏目关键词且非列表页 → 标记 info（不深挖）
+            if page_type != "list" and _is_info_page(anchor, url):
+                page_type = "info"
             nodes.append({"index": len(nodes) + 1, "url": url, "title": anchor,
                           "type": page_type, "depth": depth})
 
-        # home/列表页/详情页/other 不递归；外链不深入。
+        # home/列表页/详情页/info/other 不递归；外链不深入。
         # 例外：根页（home，depth 0）必须递归，因为首页兼作导航入口。
-        if page_type == "home" or page_type not in ("list", "detail", "other"):
+        if page_type == "home" or page_type not in ("list", "detail", "info", "other"):
             if depth < max_depth:
                 all_links = _extract_links(html, url, domain)
                 if len(all_links) > max_links:
