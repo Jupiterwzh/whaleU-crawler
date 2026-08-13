@@ -736,4 +736,13 @@ data/checkpoints/<domain>.crash.json    特殊暂存 0/1
 - [ ] 信息页/不确定页深入逻辑未实现
 - [ ] 分类精度（URL list 后缀 + 内容阈值）待用户确认是否满意
 
+### [AI] 遍历完善（首页预览追踪 + info 页 + 截断提示）
+- **首页标记 home**：depth 0 根页 type=home + preview_count（通知预览数），不作为列表页候选；用户选择只从 list 候选
+- **info 页分类**：锚文本含信息栏目关键词（简介/师资/领导/机构/招生/就业等）的非列表页 → info，不深挖
+- **max_links 截断提示**：truncated 标志 + hint，Agent 可用更大 max_links 重试
+- **用户决定确认**：max_depth=4 ✅、结构树不存文件 ✅、max_links 不足可提高 ✅
+- 测试 15 个（home/info/truncated/selection），explorer 69 全过
+- 真实遍历：cs 首页 home(预览169条)、main.htm/学院简介/师资等标 list（Agent 据锚文本判断通知 vs 信息）
+- 待决定：通知类 vs 信息类列表页的 Agent 判断分工、info 关键词表、结构树文件
+
 ---
