@@ -745,4 +745,14 @@ data/checkpoints/<domain>.crash.json    特殊暂存 0/1
 - 真实遍历：cs 首页 home(预览169条)、main.htm/学院简介/师资等标 list（Agent 据锚文本判断通知 vs 信息）
 - 待决定：通知类 vs 信息类列表页的 Agent 判断分工、info 关键词表、结构树文件
 
+### [AI] 待决定逐个处理（用户在场，2026-08-13）
+- **遍历参数**：max_depth=4 确认；max_links 不足可提高（truncated 提示）；结构树不存文件（仅终端）
+- **列表页 category 自动标注**：notice/info 按锚文本，仅参考不默认选
+- **关键词独立配置**：`keywords.json`（infoKeywords/noticeKeywords），crawl_structure 读取（先误用经验库方案，用户纠正改独立配置），可随时调整
+- **外链甄别**：只过滤公众号外链（mp.weixin.qq.com/wechat.com），其他跨站保留（小组已实现公众号爬取）。grawww 实测 21 站内通知、微信外链 0
+- **域名核对**（NJU 官网 xybm.htm）：jwb=纪检监察机构（docx 误标教务处）、xkb=学科建设与规划处（正确）、jw=本科生/教务
+- **ndwy**：跳过不标记，用户处理 VPN
+- 测试：explorer 70、crawler 6（全绿）
+- 教训：实现前先确认用户选型（关键词配置误选经验库→用户纠正为独立配置，重做）
+
 ---
