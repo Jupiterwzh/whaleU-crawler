@@ -42,18 +42,37 @@ def _same_domain(url: str, domain: str) -> bool:
         return False
 
 
+def _count_notice_links(html: str) -> int:
+    """统计页内通知条目数：news_title / link-title / li+日期 / dataList 等模式。"""
+    count = 0
+    count += len(re.findall(r'class=["\']news_title["\']', html, re.I))
+    count += len(re.findall(r'class=["\']link-title["\']', html, re.I))
+    count += len(re.findall(r'class=["\'][^"\']*news_date[^"\']*["\']', html, re.I))
+    count += len(re.findall(r'class=["\'][^"\']*news_meta[^"\']*["\']', html, re.I))
+    count += len(re.findall(r'dataList\s*=\s*\[', html, re.I))
+    count += len(re.findall(r'<li[^>]*>[\s\S]{1,200}?href=["\'][^"\']+["\']', html, re.I))
+    return count
+
+
 def _classify_page(html: str, url: str) -> str:
-    """页面分类：list（列表页）/ detail（详情页）/ middle（中间页）/ other（功能页）。"""
+    """页面分类：list（列表页）/ detail（详情页）/ middle（中间页）/ other（功能页）。
+
+    升级：复用爬虫 isNotificationListPage 的多模式判定（news_title/link-title/news_date/
+    news_meta/dataList/li+date），降低误判；URL 含 list 后缀也算列表页。
+    """
     if not html:
         return "other"
-    # 列表页：多个通知特征
-    list_hits = sum(1 for s in _LIST_SIGNS if s.search(html))
-    if list_hits >= 2:
+
+    notice_count = _count_notice_links(html)
+
+    # 列表页：通知条目数达到阈值（多信号合计）
+    if notice_count >= 3:
         return "list"
     # URL 约定：苏迪 CMS 的 list.htm / listN.htm 都是列表页
     path = urlparse(url).path.lower()
-    if re.search(r"(^|/)list\d*\.htm$", path):
+    if re.search(r"(^|/)list\d*\.htm$", path) and notice_count >= 1:
         return "list"
+
     # 详情页：article/h1 + 少量链接
     detail_hits = sum(1 for s in _DETAIL_SIGNS if s.search(html))
     links = re.findall(r'<a[^>]+href=["\']([^"\']+)["\']', html)

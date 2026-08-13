@@ -101,10 +101,12 @@ def test_tool_handler_returns_json_string():
 
 
 def test_classify_url_list_suffix():
-    """URL 含 list.htm 后缀即视为列表页（苏迪 CMS 约定）。"""
-    # 即使 HTML 无类名特征，list.htm 也算列表页
-    assert _classify_page("<html><body><p>内容</p></body></html>", "https://cs.nju.edu.cn/1716/list.htm") == "list"
-    assert _classify_page("<html><body><p>内容</p></body></html>", "https://cs.nju.edu.cn/1716/list2.htm") == "list"
+    """URL 含 list.htm 后缀且有通知内容即视为列表页（苏迪 CMS 约定）。"""
+    # list.htm 含通知条目 → 列表页
+    assert _classify_page("<html><body><a class='news_title'>a</a><a class='news_title'>b</a><a class='news_title'>c</a></body></html>", "https://cs.nju.edu.cn/1716/list.htm") == "list"
+    assert _classify_page("<html><body><a class='news_title'>a</a></body></html>", "https://cs.nju.edu.cn/1716/list2.htm") == "list"
+    # 空 list.htm（无内容）不算列表页
+    assert _classify_page("<html><body><p>内容</p></body></html>", "https://cs.nju.edu.cn/1716/list.htm") != "list"
     # 非 list 后缀不误判
     assert _classify_page("<html><body><p>内容</p></body></html>", "https://cs.nju.edu.cn/intro.htm") in ("middle", "other")
 
