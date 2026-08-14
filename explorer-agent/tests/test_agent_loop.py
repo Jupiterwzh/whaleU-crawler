@@ -265,3 +265,29 @@ def test_build_marked_tree_collapses_leaf_noise():
     assert "刘洋" not in tree
     # 折叠汇总说明
     assert "详情页" in tree and "已折叠" in tree and "中间页" in tree
+
+
+def test_tool_result_truncated_in_context(tmp_path, monkeypatch):
+    """长工具结果进 context 前截断（防 context 膨胀导致探索超时）。"""
+    import os
+    monkeypatch.chdir(Path(__file__).parent.parent)
+    from src.agent_loop import AgentLoop, _TOOL_RESULT_LIMIT
+    from src.harness import Harness
+    h = Harness.from_yaml("agent.yaml")
+    llm = MagicMock()
+    llm.chat.side_effect = [
+        {"text": "抓", "tool_calls": [{"name": "fetch_url", "arguments": {"url": "https://x"}, "id": "1"}]},
+        {"text": "完成", "tool_calls": None},
+    ]
+    long_html = "<html>" + "x" * 10000 + "</html>"
+    h.tools.get("fetch_url").handler = MagicMock(return_value=long_html)
+    monkeypatch.setattr("builtins.input", lambda prompt="": "y")
+    loop = AgentLoop(h, llm)
+    loop.run("探索 https://x")
+    # 第二轮 LLM 收到的 context 里，工具结果应被截断
+    msgs = llm.chat.call_args_list[1][0][0]
+    tool_msgs = [m for m in msgs if m["role"] == "tool"]
+    assert tool_msgs, "应有工具结果消息"
+    content = tool_msgs[0]["content"]
+    assert len(content) <= _TOOL_RESULT_LIMIT + 100, f"工具结果应截断，实际 {len(content)}"
+    assert "已截断" in content

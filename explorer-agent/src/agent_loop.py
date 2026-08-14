@@ -20,6 +20,7 @@ def _interactive_input(prompt: str, default: str = "y") -> str:
 
 
 _PREVIEW_LIMIT = 4000
+_TOOL_RESULT_LIMIT = 2000
 
 
 def _extract_list_candidates(result: str) -> list[dict]:
@@ -337,7 +338,10 @@ class AgentLoop:
                                 self._structure_truncated = bool(_data.get("truncated"))
                         except json.JSONDecodeError:
                             pass
-                    context.append({"role": "tool", "tool_call_id": tc["id"], "content": result})
+                    # 工具结果进 context 前截断，防 context 膨胀（LLM 每步变慢 → 探索超时）
+                    _tool_result = result if len(result) <= _TOOL_RESULT_LIMIT else (
+                        result[:_TOOL_RESULT_LIMIT] + f"\n...（工具结果过长，已截断 {len(result)} → {_TOOL_RESULT_LIMIT} 字符，详见轨迹）")
+                    context.append({"role": "tool", "tool_call_id": tc["id"], "content": _tool_result})
                     H.tracer.record(tracer_step, "", action, result)
                     print(f"  结果: {result[:200]}")
 
