@@ -20,8 +20,7 @@ whaleU-crawler/
 │   ├── main.py               # 策略 Agent 入口（三段式）
 │   ├── src/{harness,agent_loop,llm,tools,guardrail,tracer,filestore,preflight,postflight,keys}
 │   ├── rules/AGENTS.md       # Agent 行为规则
-│   ├── guardrails/           # 安全门控策略
-│   └── SPEC.md / PLAN.md / SPEC_PROCESS.md / REFLECTION.md   # 大作业交付物
+│   └── guardrails/           # 安全门控策略
 ├── query-agent/              # 外层查询 Agent（独立 harness，真复制内核）
 │   ├── query.py              # 查询 Agent 入口
 │   ├── webui.py              # 单页表单 WebUI（http://localhost:8000）
@@ -34,7 +33,12 @@ whaleU-crawler/
 │   └── SPEC.md
 ├── shared/rag/               # RAGStore + validity 判定（公共位置）
 ├── data/                     # FileStore 目录（策略/备份/暂存/crash，从 STRATEGIES_DIR 推导）
-├── Dockerfile / .gitlab-ci.yml / Makefile
+├── SPEC.md                   # 大作业交付物：设计规格
+├── PLAN.md                   # 大作业交付物：实现计划
+├── SPEC_PROCESS.md           # 大作业交付物：过程记录
+├── REFLECTION.md             # 大作业交付物：反思报告
+├── Dockerfile / Makefile
+├── .gitlab-ci.yml            # CI：unit-test job
 ├── AGENTS.md / AGENT_LOG.md / README.md / 待办.md
 └── opencode.json
 ```
@@ -86,9 +90,9 @@ make test    # 或 cd explorer-agent && python -m pytest -q
 
 ```bash
 docker build -t whalequery .
-docker run -v $PWD/.env:/app/explorer-agent/.env \
-  -e CHERRYIN_API_KEY=$CHERRYIN_API_KEY \
-  whalequery query "最近有什么通知"
+docker run -v $PWD/query-agent/.env:/app/query-agent/.env \
+  -e DEEPSEEK_API_KEY=$DEEPSEEK_API_KEY \
+  whalequery "计算机学院最近有什么通知"
 ```
 
 > 说明：Docker/Linux 下 keyring 可能无系统后端，key 用环境变量传入；钥匙串方案适用于本机（macOS/Win/Linux Desktop）。

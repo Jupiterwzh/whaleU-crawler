@@ -51,7 +51,7 @@
 
 ## F. 项目特定
 
-18. **Agent 是锚点** — Agent 架构严格遵循 `explorer-agent/SPEC.md`，不偏离；Agent 与 crawler 接口不匹配时，改 crawler 不改 Agent。
+18. **Agent 是锚点** — Agent 架构严格遵循 `SPEC.md`（大作业交付物，位于仓库根），不偏离；Agent 与 crawler 接口不匹配时，改 crawler 不改 Agent。
 19. **MVP 范围** — 不加 MCP/Skill/Hooks/Sandbox/Memory/SubAgent/RAG/compact，除非用户明确要求。
 
 ## G. 执行偏好
