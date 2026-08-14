@@ -31,3 +31,41 @@ def test_dedup(tmp_path):
     store.ingest([rec])
     store.ingest([rec])
     assert store._doc_count() == 1
+
+
+def test_similar_content_dedup(tmp_path):
+    """URL 不同但内容完全相同 → 判重（内容去重）。"""
+    store = RAGStore(str(tmp_path))
+    store.ingest([{"title": "计算机学院关于2026年暑期工作的通知", "content": "这是一段足够长的通知正文内容，用于测试内容去重是否会正确判断相同内容为重复记录", "url": "https://x/u1", "domain": "cs.nju.edu.cn", "date": "2026-08-01"}])
+    # URL 不同，标题不同，但内容完全相同 → 判重
+    store.ingest([{"title": "暑期工作通知(转载)", "content": "这是一段足够长的通知正文内容，用于测试内容去重是否会正确判断相同内容为重复记录", "url": "https://x/u2", "domain": "cs.nju.edu.cn", "date": "2026-08-01"}])
+    assert store._doc_count() == 1, "内容相同应判重"
+
+
+def test_different_content_not_dedup(tmp_path):
+    """内容明显不同 → 不算重复。"""
+    store = RAGStore(str(tmp_path))
+    store.ingest([{"title": "计算机学院暑期工作通知", "content": "关于暑期工作的第一段很长的正文内容，包括具体安排和时间地点等详细信息说明", "url": "https://x/u1", "domain": "cs.nju.edu.cn", "date": "2026-08-01"}])
+    store.ingest([{"title": "研究生招生面试通知", "content": "关于研究生招生面试的另一段完全不同的正文内容，涉及面试流程和材料准备等", "url": "https://x/u2", "domain": "cs.nju.edu.cn", "date": "2026-08-01"}])
+    assert store._doc_count() == 2
+
+
+def test_content_based_dedup(tmp_path):
+    """内容相同（URL/标题不同）→ 判重；内容不同 → 不入重。"""
+    store = RAGStore(str(tmp_path))
+    store.ingest([{"title": "通知A", "content": "这是一段足够长的相同内容正文用于去重测试验证", "url": "https://x/u1", "domain": "cs.nju.edu.cn", "date": "2026-08-01"}])
+    # URL/标题不同，但内容完全相同 → 判重
+    store.ingest([{"title": "通知B", "content": "这是一段足够长的相同内容正文用于去重测试验证", "url": "https://x/u2", "domain": "cs.nju.edu.cn", "date": "2026-08-01"}])
+    assert store._doc_count() == 1, "内容相同应判重"
+    # 内容不同 → 不入重
+    store.ingest([{"title": "通知C", "content": "这是另一段完全不同的足够长正文内容用于测试", "url": "https://x/u3", "domain": "cs.nju.edu.cn", "date": "2026-08-01"}])
+    assert store._doc_count() == 2
+
+
+def test_empty_content_falls_back_title(tmp_path):
+    """content 空时退回标题去重。"""
+    store = RAGStore(str(tmp_path))
+    store.ingest([{"title": "同一标题", "content": "", "url": "https://x/u1", "domain": "cs.nju.edu.cn", "date": "2026-08-01"}])
+    # content 空，标题相同 → 判重（退回首标题）
+    store.ingest([{"title": "同一标题", "content": "", "url": "https://x/u2", "domain": "cs.nju.edu.cn", "date": "2026-08-01"}])
+    assert store._doc_count() == 1

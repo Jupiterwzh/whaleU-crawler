@@ -61,8 +61,11 @@ class RAGStore:
             date = rec.get("date", "")
             if not domain or not date:
                 continue
-            dedup = rec.get("dedup_hash") or self._sha(rec.get("url", ""), rec.get("title", ""))
+            dedup = rec.get("dedup_hash") or self._dedup_key(rec)
             if self._has_dedup(dedup):
+                continue
+            # 相似度去重：同 domain 内容相似度 ≥ 0.99 视为重复（content 空则比标题）
+            if self._has_similar_content(domain, rec):
                 continue
             doc = dict(rec)
             doc["id"] = self._id(domain, date, self._next_seq(domain, date))
@@ -71,6 +74,53 @@ class RAGStore:
             self._append(self._slice_path(domain, date), doc)
             added += 1
         return added
+
+    @staticmethod
+    def _sha(url: str, title: str) -> str:
+        return hashlib.sha256(f"{url}|{title}".encode("utf-8")).hexdigest()
+
+    @staticmethod
+    def _dedup_key(rec: dict) -> str:
+        """内容优先的判重键：content 非空且足够长用内容；否则退回 url+title。
+
+        content 过短（<20 字符，如仅"发布时间/浏览次数"元数据）视为无正文，避免短内容误判。
+        """
+        content = (rec.get("content") or "").strip()
+        domain = rec.get("domain", "")
+        if len(content) >= 20:
+            return hashlib.sha256(f"{domain}|{content}".encode("utf-8")).hexdigest()
+        return hashlib.sha256(f"{domain}|{rec.get('url','')}|{rec.get('title','')}".encode("utf-8")).hexdigest()
+
+    @staticmethod
+    def _content_similarity(a: str, b: str) -> float:
+        """内容相似度：difflib SequenceMatcher ratio（0~1）。"""
+        if not a or not b:
+            return 0.0
+        if a == b:
+            return 1.0
+        try:
+            from difflib import SequenceMatcher
+            return SequenceMatcher(None, a, b).ratio()
+        except Exception:
+            return 0.0
+
+    def _has_similar_content(self, domain: str, rec: dict, threshold: float = 0.99) -> bool:
+        """同 domain 内容相似度 ≥ threshold 视为重复；content 过短（<20）则比标题。"""
+        new_content = (rec.get("content") or "").strip()
+        new_title = rec.get("title", "")
+        use_content = len(new_content) >= 20
+        for p in self._docs.glob(f"{domain}.*.jsonl"):
+            for line in p.read_text(encoding="utf-8").splitlines():
+                if not line.strip():
+                    continue
+                doc = json.loads(line)
+                if use_content:
+                    if self._content_similarity(doc.get("content", ""), new_content) >= threshold:
+                        return True
+                else:
+                    if self._content_similarity(doc.get("title", ""), new_title) >= threshold:
+                        return True
+        return False
 
     @staticmethod
     def _sha(url: str, title: str) -> str:
