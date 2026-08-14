@@ -97,6 +97,10 @@ def _add_rag_manager_path() -> None:
         sys.path.insert(0, str(_RAG_MANAGER_DIR))
 
 
+# 站点候选清单（从南京大学院系/官方网页清单解析，见 crawler/data/sites.json）
+_SITES_JSON = Path(__file__).resolve().parent.parent.parent.parent / "crawler" / "data" / "sites.json"
+
+
 def make_rag_tools(rag_store, crawler_script: str, strategies_dir: str = "") -> list[Tool]:
     """装配 query-agent（分发 Agent）的工具：rag_search / run_crawler / check_strategy / run_explorer。"""
 
@@ -118,23 +122,45 @@ def make_rag_tools(rag_store, crawler_script: str, strategies_dir: str = "") -> 
         return f"策略不存在：{domain} 尚无策略文件"
 
     def list_sites() -> str:
-        """列出已知站点候选（从策略目录 meta 构建）：siteName + domain，供对照用户提到的机构。"""
+        """列出站点候选（siteName + domain），供对照用户提到的机构。
+
+        优先读取 crawler/data/sites.json（南京大学院系/官方网页清单，112 站点）；
+        无该文件时 fallback 到策略目录 meta。
+        """
+        if _SITES_JSON.exists():
+            try:
+                sites = json.loads(_SITES_JSON.read_text(encoding="utf-8"))
+                lines = ["已知站点候选（sites.json）："]
+                for s in sites:
+                    name = s.get("name", "")
+                    domain = s.get("domain", "")
+                    cat = s.get("category", "")
+                    if name and domain:
+                        lines.append(f"  - {name} ({domain})" + (f" [{cat}]" if cat else ""))
+                if len(lines) > 1:
+                    return "\n".join(lines)
+            except (json.JSONDecodeError, OSError):
+                pass
+        # fallback：策略目录 meta
         if not strategies_dir:
-            return "策略目录未配置，无法列出候选站点"
+            return "策略目录未配置，且无 sites.json，无法列出候选站点"
         sdir = Path(strategies_dir)
-        lines = ["已知站点候选："]
+        lines = ["已知站点候选（策略 meta）："]
         for p in sorted(sdir.glob("*.json")):
-            if p.name.endswith(".draft.json"):
+            if p.name.endswith(".draft.json") or p.name == "sites.json":
                 continue
             try:
-                meta = json.loads(p.read_text(encoding="utf-8")).get("meta", {})
+                data = json.loads(p.read_text(encoding="utf-8"))
+                if not isinstance(data, dict):
+                    continue
+                meta = data.get("meta", {})
             except (json.JSONDecodeError, OSError):
                 continue
             name = meta.get("siteName", "")
             domain = meta.get("domain", p.stem)
             lines.append(f"  - {name} ({domain})")
         if len(lines) == 1:
-            return "当前无已知站点候选（策略目录为空）"
+            return "当前无已知站点候选（sites.json 与策略目录均为空）"
         return "\n".join(lines)
 
     def run_explorer(url: str, timeout: int = 300) -> str:

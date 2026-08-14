@@ -123,3 +123,31 @@ def test_list_sites_builds_candidates(tmp_path, monkeypatch):
     out = tool.handler()
     assert "cs.nju.edu.cn" in out and "计算机学院" in out
     assert "software.nju.edu.cn" in out and "软件学院" in out
+
+
+def test_list_sites_prefers_sites_json(tmp_path, monkeypatch):
+    """L5: 有 sites.json 时 list_sites 返回其站点（含名称+域名）；无则 fallback 策略 meta。"""
+    import src.tools.rag_tools as rt
+    from src.tools.rag_tools import make_rag_tools
+
+    sites_file = tmp_path / "sites.json"
+    sites_file.write_text(json.dumps([
+        {"name": "软件学院", "domain": "software.nju.edu.cn", "category": "院系", "source": "官方"},
+        {"name": "智能软件与工程学院", "domain": "ise.nju.edu.cn", "category": "院系", "source": "官方"},
+    ]), encoding="utf-8")
+
+    # sites.json 存在 → 返回 sites.json 内容
+    monkeypatch.setattr(rt, "_SITES_JSON", sites_file)
+    store = MagicMock()
+    tools = make_rag_tools(store, "node", strategies_dir=str(tmp_path))
+    tool = [t for t in tools if t.name == "list_sites"][0]
+    out = tool.handler()
+    assert "软件学院" in out and "software.nju.edu.cn" in out
+    assert "智能软件与工程学院" in out and "ise.nju.edu.cn" in out
+
+    # sites.json 不存在 → fallback 策略 meta
+    monkeypatch.setattr(rt, "_SITES_JSON", tmp_path / "nope.json")
+    (tmp_path / "cs.nju.edu.cn.json").write_text(
+        json.dumps({"meta": {"domain": "cs.nju.edu.cn", "siteName": "计算机学院"}}), encoding="utf-8")
+    out2 = tool.handler()
+    assert "cs.nju.edu.cn" in out2 and "计算机学院" in out2
