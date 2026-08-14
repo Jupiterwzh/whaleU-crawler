@@ -3,9 +3,8 @@
 无关文档/
 nju-browser/
 crawler/node_modules/
-explorer-agent/.env
-explorer-agent/traces/
-explorer-agent/__pycache__/
+**/.env
+**/traces/
 **/__pycache__/
 *.pyc
 .pytest_cache/

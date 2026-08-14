@@ -6,6 +6,14 @@ from datetime import datetime
 from .llm.client import LLMClient
 
 
+def _interactive_input(prompt: str) -> str:
+    """交互输入；非交互环境（无 stdin，如 Docker/CI）时自动确认返回 y。"""
+    try:
+        return input(prompt)
+    except EOFError:
+        return "y"
+
+
 def _save_snapshot(H, text, round_num):
     """保存当前策略快照到 traces/backup-<trace_id>-round<N>.json"""
     backup = {
@@ -67,7 +75,7 @@ class AgentLoop:
                     print(f"\n=== 第 {round_idx + 1} 轮探索完成 ===\n")
 
                     if round_idx == max_adjustments:
-                        ans = input(f"Agent 输出:\n{text[:500]}\n\n最终确认? (y=确认/暂存=保存退出/放弃=不保存退出): ")
+                        ans = _interactive_input(f"Agent 输出:\n{text[:500]}\n\n最终确认? (y=确认/暂存=保存退出/放弃=不保存退出): ")
                         if ans.lower() == "y":
                             H.tracer.flush()
                             return text
@@ -84,7 +92,7 @@ class AgentLoop:
                     if remaining > 0:
                         print(f"（还可调整 {remaining} 次）")
                     print("（输入 暂存=保存当前结果并退出，exit=直接退出）")
-                    ans = input(f"Agent 输出:\n{text[:500]}\n\n确认? (y/调整建议): ")
+                    ans = _interactive_input(f"Agent 输出:\n{text[:500]}\n\n确认? (y/调整建议): ")
                     if ans.lower() == "y":
                         H.tracer.flush()
                         return text
