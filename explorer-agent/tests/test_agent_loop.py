@@ -212,3 +212,16 @@ def test_build_marked_tree():
     assert "⚠️未选" in tree and "1650/list.htm" in tree.split("⚠️未选")[1]
     assert "❌info" in tree or "❌信息" in tree
     assert "❌详情" in tree
+
+
+def test_build_marked_tree_shows_user_added_urls():
+    """用户新增的入口（不在 crawl_structure 节点里）也应显示为 ➕用户新增。"""
+    from src.agent_loop import _build_marked_tree
+    nodes = [
+        {"index": 1, "url": "https://cs.nju.edu.cn/", "title": "首页", "type": "home", "depth": 0},
+        {"index": 2, "url": "https://cs.nju.edu.cn/1702/list.htm", "title": "院内公告", "type": "list", "depth": 1},
+    ]
+    selected = {"https://cs.nju.edu.cn/1702/list.htm", "https://cs.nju.edu.cn/9999/list.htm"}
+    tree = _build_marked_tree(nodes, selected)
+    assert "9999/list.htm" in tree
+    assert "➕用户新增" in tree or "用户新增" in tree

@@ -51,6 +51,9 @@ def _build_marked_tree(nodes: list[dict], selected_urls: set[str]) -> str:
     if not nodes:
         return "（无节点）"
     lines = []
+    node_urls = {n.get("url") for n in nodes}
+    # 选中的 URL 不在节点里 → 用户新增（可能是 crawl_structure 未遍历到的页面）
+    extra_selected = sorted(selected_urls - node_urls)
     for n in nodes:
         depth = n.get("depth", 0)
         indent = "│   " * max(depth - 1, 0) + ("├── " if depth > 0 else "")
@@ -74,6 +77,8 @@ def _build_marked_tree(nodes: list[dict], selected_urls: set[str]) -> str:
         else:
             mark = ntype
         lines.append(f"{indent}[{mark}] {title} ({url})")
+    for url in extra_selected:
+        lines.append(f"├── [➕用户新增] (用户指定入口) ({url})")
     return "\n".join(lines)
 
 
