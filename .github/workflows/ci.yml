@@ -1,0 +1,40 @@
+# GitHub Actions CI — 每次 push 自动运行单元测试
+name: unit-test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  unit-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+
+      - name: Install Python deps
+        run: |
+          pip install -r explorer-agent/requirements.txt
+          pip install -r query-agent/requirements.txt
+          pip install -r rag-manager/requirements.txt
+
+      - name: Run explorer-agent tests
+        run: cd explorer-agent && python -m pytest -q
+
+      - name: Run query-agent tests
+        run: cd query-agent && python -m pytest -q
+
+      - name: Run rag-manager tests
+        run: cd rag-manager && python -m pytest -q
+
+      - name: Run crawler tests
+        run: cd crawler && node --test test/collector.test.js
