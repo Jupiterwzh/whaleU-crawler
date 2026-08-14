@@ -43,41 +43,78 @@ whaleU-crawler/
 └── opencode.json             # opencode 工具配置
 ```
 
-## 快速开始
+## 安装
 
-### 1. 配置凭据（安全存储，非明文）
+### 1. 前置依赖
+
+- Python 3.11+
+- Node.js 18+
+- （可选）Docker，用于容器分发
+
+### 2. 安装 Python 依赖
+
+```bash
+pip install -r explorer-agent/requirements.txt
+pip install -r query-agent/requirements.txt
+pip install -r rag-manager/requirements.txt
+```
+
+crawler 与 nju-browser 为 Node 原生模块，无第三方依赖（HTTP 模式），无需 `npm install`。
+
+### 3. 配置凭据
+
+各 Agent 目录下有 `.env.example`，复制为 `.env` 并填入配置：
 
 ```bash
 cd explorer-agent
-python -m src.keys set    # 引导隐藏录入 key → 存入系统钥匙串
-# 或用环境变量：export LLM_API_KEY=$CHERRYIN_API_KEY
+cp .env.example .env
+# 编辑 .env：LLM_API_KEY 用 ${DEEPSEEK_API_KEY} 引用环境变量
 ```
 
-### 2. 查询通知（外层查询 Agent）
+key 也可通过系统钥匙串（keyring）安全录入：
+
+```bash
+cd explorer-agent
+python -m src.keys set    # 引导隐藏录入 key，支持 get/set/clear
+```
+
+### 4. 验证安装
+
+```bash
+make test    # 3 个 Agent + crawler 全量测试
+```
+
+---
+
+## 快速开始
+
+### 1. 查询通知（外层查询 Agent）
 
 ```bash
 cd query-agent
 python query.py "计算机学院最近有什么通知"
 ```
 
-### 3. 生成/更新策略（内层策略 Agent）
+### 2. 生成/更新策略（内层策略 Agent）
 
 ```bash
 cd explorer-agent
 python main.py "探索 https://cs.nju.edu.cn/ 的通知公告入口"
 ```
 
-### 4. 爬虫（已有策略时直接爬取）
+### 3. 爬虫（已有策略时直接爬取）
 
 ```bash
 cd crawler
 node src/collectors/collector.js --site https://cs.nju.edu.cn/ --days 365
 ```
 
-### 5. 测试
+### 4. 运行 WebUI
 
 ```bash
-make test    # 或 cd explorer-agent && python -m pytest -q
+cd query-agent
+python webui.py 8000
+# 浏览器打开 http://localhost:8000
 ```
 
 ## 协作模式
@@ -99,9 +136,11 @@ docker run -v $PWD/query-agent/.env:/app/query-agent/.env \
 
 ## 测试与 CI
 
-- 一键测试：`make test`
-- CI：`.gitlab-ci.yml` 定义 `unit-test` job，push 自动跑
-- 核心机制（主循环/工具分发/guardrail/RAG）用 mock/stub LLM 做确定性单元测试
+- 一键测试：`make test`（3 个 Agent + crawler 全量测试）
+- CI 双配置：
+  - GitHub Actions：`.github/workflows/ci.yml`，定义 `unit-test` job，push 自动跑
+  - GitLab CI：`.gitlab-ci.yml`，同样定义 `unit-test` job
+- 核心机制（主循环/工具分发/guardrail/RAG）用 mock/stub LLM 做确定性单元测试，无真实 key 也能跑
 
 ## 环境变量
 
@@ -110,6 +149,7 @@ docker run -v $PWD/query-agent/.env:/app/query-agent/.env \
 | `LLM_BASE_URL` | LLM 端点 |
 | `LLM_API_KEY` | LLM 密钥（可用钥匙串替代） |
 | `LLM_MODEL` | 模型名 |
+| `DEEPSEEK_API_KEY` | DeepSeek 官方 key（`.env` 里 `LLM_API_KEY=${DEEPSEEK_API_KEY}` 引用） |
 | `STRATEGIES_DIR` | 策略目录 |
 | `CRAWLER_SCRIPT` | 爬虫脚本路径 |
 | `NJU_BROWSER_DIR` | NJU 浏览器服务目录 |
@@ -117,7 +157,7 @@ docker run -v $PWD/query-agent/.env:/app/query-agent/.env \
 
 ## 安全边界
 
-- 凭据：key 走系统钥匙串（`src/keys.py`）或环境变量，`.env` 为明文且被 gitignore，SPec 安全节有威胁模型
+- 凭据：key 走系统钥匙串（`src/keys.py`）或环境变量，`.env` 为明文且被 gitignore，SPEC 安全节有威胁模型
 - 门控：Agent 工具调用经 guardrail 策略（危险操作 deny/ask_user）
 - 注入：用户反馈注入 LLM 时有边界标记，防 prompt 注入
 - 崩溃：strategy/crash 文件原子写，防中断截断
