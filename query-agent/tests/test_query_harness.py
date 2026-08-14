@@ -139,3 +139,24 @@ def test_loop_exit_on_agent_question(tmp_path, monkeypatch):
     result = loop.run("软件学院")
     assert "用户退出" in result
     assert llm.chat.call_count == 1, "exit 后不应再调 LLM"
+
+
+def test_run_explorer_failure_advice_after_twice(tmp_path, monkeypatch):
+    """run_explorer 连续失败 2 次 → 输出建议手动执行 explorer-agent。"""
+    monkeypatch.chdir(Path(__file__).parent.parent)
+    from src.agent_loop import AgentLoop
+    from src.harness import Harness
+    store = RAGStore(str(tmp_path))
+    h = Harness.from_yaml("agent.yaml", rag_store=store)
+    llm = MagicMock()
+    fail = "策略 Agent 唤起失败: Command ... timed out after 300 seconds"
+    llm.chat.side_effect = [
+        {"text": "唤起", "tool_calls": [{"name": "run_explorer", "arguments": {"url": "https://ise.nju.edu.cn/"}, "id": "1"}]},
+        {"text": "再次唤起", "tool_calls": [{"name": "run_explorer", "arguments": {"url": "https://ise.nju.edu.cn/"}, "id": "2"}]},
+        {"text": "完成", "tool_calls": None},
+    ]
+    h.tools.get("run_explorer").handler = MagicMock(return_value=fail)
+    monkeypatch.setattr("builtins.input", lambda prompt="": "y")
+    loop = AgentLoop(h, llm)
+    loop.run("智软通知")
+    assert loop._explorer_failures >= 2

@@ -93,6 +93,7 @@ class AgentLoop:
         self.H = harness
         self.llm = llm
         self._list_all_result: str | None = None  # 缓存的"站点全部通知"完整列表
+        self._explorer_failures = 0  # run_explorer 连续失败计数（超时/唤起失败）
 
     def _finalize(self, text: str) -> str:
         """纯检索列表场景：最终答案 = Agent 输出引言 + 工具完整列表（含有效期），避免 LLM 精简/丢有效期。"""
@@ -257,6 +258,14 @@ class AgentLoop:
                     # 缓存"站点全部通知"完整列表（供最终回答兜底，防 Agent 精简）
                     if tc["name"] == "rag_search" and "共收录" in result:
                         self._list_all_result = result
+                    # 追踪 run_explorer 连续失败（超时/唤起失败），≥2 次时提示手动执行 explorer-agent
+                    if tc["name"] == "run_explorer" and ("失败" in result or "超时" in result or "timed out" in result):
+                        self._explorer_failures += 1
+                        if self._explorer_failures >= 2:
+                            print("\n⚠️ 策略 Agent 连续两次唤起失败（可能是网络开小差或网页分析遇到意外困难）。")
+                            print("   建议：去 explorer-agent 手动执行：`cd explorer-agent && python main.py \"探索 <站点>\"`\n")
+                    else:
+                        self._explorer_failures = 0
                     context.append({"role": "tool", "tool_call_id": tc["id"], "content": result})
                     H.tracer.record(tracer_step, "", action, result)
                     print(f"  结果: {result[:200]}")
