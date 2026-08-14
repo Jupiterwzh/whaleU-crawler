@@ -88,7 +88,8 @@ def _parse_backup_cmd(ans: str) -> tuple[str, list[int]]:
     """解析备份管理命令。
 
     返回 (动作, 编号列表)。动作：delete/enable/detail/list/exit/unknown。
-    支持写法：删除 1 / 删除1 / 1 / 删除 1 2 / 简介 3 等。
+    支持写法：删除 1 / 删除1 / 1 / 删除 1 2 / 删除12 / 简介 3 / 启用12 等。
+    备份编号上限 3，因此多位连写（如 12）按位拆成 [1, 2]；纯编号默认显示简介。
     """
     a = (ans or "").strip()
     low = a.lower()
@@ -96,14 +97,19 @@ def _parse_backup_cmd(ans: str) -> tuple[str, list[int]]:
         return "exit", []
     if low in ("list", "列表"):
         return "list", []
-    idxs = [int(m) for m in re.findall(r"\d+", a)]
-    if "删除" in a or (idxs and not any(k in a for k in ("启用", "简介", "详情"))):
-        return ("delete", idxs) if idxs else ("unknown", [])
+    # 提取所有数字字符，按位拆（上限 3，多位按位拆）
+    digits = re.findall(r"[1-3]", a)
+    idxs = [int(d) for d in digits]
+    if not idxs:
+        return "unknown", []
+    if "删除" in a:
+        return "delete", idxs
     if "启用" in a:
-        return ("enable", idxs) if idxs else ("unknown", [])
+        return "enable", idxs
     if "简介" in a or "详情" in a:
-        return ("detail", idxs) if idxs else ("unknown", [])
-    return "unknown", []
+        return "detail", idxs
+    # 纯编号（无动作关键词）→ 默认简介
+    return "detail", idxs
 
 
 def _manage_backups(domain: str, store: FileStore):

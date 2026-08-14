@@ -61,7 +61,28 @@ def test_parse_backup_cmd():
     assert _parse_backup_cmd("启用2") == ("enable", [2])
     assert _parse_backup_cmd("简介 3") == ("detail", [3])
     assert _parse_backup_cmd("删除 1 2") == ("delete", [1, 2])
-    assert _parse_backup_cmd("1") == ("delete", [1])  # 纯编号默认删除
+    assert _parse_backup_cmd("1") == ("detail", [1])  # 纯编号默认简介
     assert _parse_backup_cmd("exit") == ("exit", [])
     assert _parse_backup_cmd("列表") == ("list", [])
     assert _parse_backup_cmd("abc") == ("unknown", [])
+
+
+def test_parse_backup_cmd_bare_index_is_detail():
+    """纯编号默认显示简介（而非删除）。"""
+    from src.preflight import _parse_backup_cmd
+    assert _parse_backup_cmd("1") == ("detail", [1])
+    assert _parse_backup_cmd("2") == ("detail", [2])
+
+
+def test_parse_backup_cmd_concatenated_indices():
+    """连写编号 12 拆成 [1,2]（备份上限 3，多位按位拆）。"""
+    from src.preflight import _parse_backup_cmd
+    assert _parse_backup_cmd("删除12") == ("delete", [1, 2])
+    assert _parse_backup_cmd("简介12") == ("detail", [1, 2])
+    assert _parse_backup_cmd("启用 12") == ("enable", [1, 2])
+
+
+def test_parse_backup_cmd_done_exits():
+    """done 仍可退出。"""
+    from src.preflight import _parse_backup_cmd
+    assert _parse_backup_cmd("done") == ("exit", [])
