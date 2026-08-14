@@ -69,3 +69,15 @@ def test_loop_asks_experience_confirm(tmp_path, monkeypatch):
     loop.run("测试")
     # 经验确认交互不崩溃，且 tmp 库仍存在
     assert exp_path.exists()
+
+def test_preview_keeps_structure_tree():
+    """确认预览应完整保留结构树（前 4000 字符），超长才标注截断。"""
+    from src.agent_loop import _preview
+    # 正常长度（结构树 ~1000 字符）→ 不截断
+    tree = "├── [✅列表页·选中] 院内公告 (/1702/list.htm, 84条/6页)\n" * 30
+    assert _preview(tree) == tree
+    # 超长 → 保留前 4000 并标注
+    long = "x" * 6000
+    p = _preview(long)
+    assert "x" * 4000 in p
+    assert "截断" in p

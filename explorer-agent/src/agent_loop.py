@@ -6,6 +6,16 @@ from datetime import datetime
 from .llm.client import LLMClient
 
 
+_PREVIEW_LIMIT = 4000
+
+
+def _preview(text: str) -> str:
+    """确认预览：保留前 4000 字符（覆盖完整结构树），超长才标注截断。"""
+    if len(text) <= _PREVIEW_LIMIT:
+        return text
+    return text[:_PREVIEW_LIMIT] + f"\n...（输出过长已截断，完整内容见最终确认）"
+
+
 def _ask_experience_confirm(text: str, exp_path=None):
     """探索确认后询问是否沉淀经验，y 则把 Agent 的经验草案合并进经验库（失败不影响主流程）。
     exp_path 供测试注入临时路径，默认用真实经验库。"""
@@ -86,7 +96,7 @@ class AgentLoop:
                     print(f"\n=== 第 {round_idx + 1} 轮探索完成 ===\n")
 
                     if round_idx == max_adjustments:
-                        ans = input(f"Agent 输出:\n{text[:500]}\n\n最终确认? (y=确认/暂存=保存退出/放弃=不保存退出): ")
+                        ans = input(f"Agent 输出:\n{_preview(text)}\n\n最终确认? (y=确认/暂存=保存退出/放弃=不保存退出): ")
                         if ans.lower() == "y":
                             _ask_experience_confirm(text, self.experience_path)
                             H.tracer.flush()
@@ -104,7 +114,7 @@ class AgentLoop:
                     if remaining > 0:
                         print(f"（还可调整 {remaining} 次）")
                     print("（输入 暂存=保存当前结果并退出，exit=直接退出）")
-                    ans = input(f"Agent 输出:\n{text[:500]}\n\n确认? (y/调整建议): ")
+                    ans = input(f"Agent 输出:\n{_preview(text)}\n\n确认? (y/调整建议): ")
                     if ans.lower() == "y":
                         _ask_experience_confirm(text, self.experience_path)
                         H.tracer.flush()
