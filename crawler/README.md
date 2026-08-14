@@ -84,10 +84,11 @@ node collector.js --site https://xxx/
 
 ### 浏览器模式（可选）
 
-部分JS渲染站点需要浏览器模式。已验证可用的Chrome路径：
+部分JS渲染站点需要浏览器模式。浏览器服务优先使用 `CHROME_PATH` 环境变量指定的 Chrome，未设置则回退 Microsoft Edge 默认安装路径。
 
-```
-C:\Users\wangzhiheng\.cache\puppeteer\chrome\win64-148.0.7778.97\chrome-win64\chrome.exe
+```powershell
+# Windows PowerShell：指定 Chrome for Testing 路径（按实际安装位置填）
+$env:CHROME_PATH = "C:\<你的Chrome缓存路径>\chrome.exe"
 ```
 
 启动浏览器服务后，使用 `--browser` 标志：

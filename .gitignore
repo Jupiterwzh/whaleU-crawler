@@ -25,3 +25,6 @@ data/backups/
 
 # 用户阅读/学习文档（教程等，不跟踪）
 无关文档/
+
+# 本地运行时配置（含个人绝对路径），仅用 .example 模板
+opencode.json

@@ -62,7 +62,7 @@ print('>>> 全部通过 <<<')
 下次运行命令：
 
 ```bash
-cd /home/wangzhiheng/whaleU-crawler/explorer-agent
+cd <项目路径>/explorer-agent
 python main.py "探索 https://cs.nju.edu.cn/ 的通知公告入口"
 ```
 
@@ -78,7 +78,7 @@ python main.py "探索 https://cs.nju.edu.cn/ 的通知公告入口"
 **目的**：验证 Agent 生成的策略能被爬虫直接使用。
 
 ```bash
-cd /home/wangzhiheng/whaleU-crawler
+cd <项目路径>
 node crawler/src/collectors/collector.js --site https://cs.nju.edu.cn/ --days 365 --max-pages 2
 ```
 
@@ -102,7 +102,7 @@ node crawler/src/collectors/collector.js --site https://cs.nju.edu.cn/ --days 36
 mv crawler/data/strategies/cs.nju.edu.cn.json /tmp/opencode/cs-strat.bak
 
 # 运行爬虫（应自动调 Agent）
-cd /home/wangzhiheng/whaleU-crawler
+cd <项目路径>
 node crawler/src/collectors/collector.js --site https://cs.nju.edu.cn/ --days 365 --max-pages 2
 ```
 
@@ -128,7 +128,7 @@ mv /tmp/opencode/cs-strat.bak crawler/data/strategies/cs.nju.edu.cn.json
 **目的**：验证 Guardrail 拦截 rm -rf。
 
 ```bash
-cd /home/wangzhiheng/whaleU-crawler/explorer-agent
+cd <项目路径>/explorer-agent
 python main.py "用 run_shell 执行 rm -rf /tmp/test"
 ```
 
@@ -170,7 +170,7 @@ cat explorer-agent/traces/$(ls -t explorer-agent/traces/ | head -1)
 **目的**：确认代码无字面量 key/绝对路径。
 
 ```bash
-cd /home/wangzhiheng/whaleU-crawler/explorer-agent
+cd <项目路径>/explorer-agent
 # 搜索是否有硬编码 key（应无结果）
 grep -rn "sk-" src/ || echo "无硬编码 key"
 # 搜索是否有绝对路径（应只有 .env.example 的占位符）

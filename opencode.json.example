@@ -1,0 +1,49 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugin": [
+    "file://<你的superpowers插件绝对路径>/superpowers.js"
+  ],
+  "skills": {
+    "paths": ["./skills"]
+  },
+  "model": "deepseek/deepseek-v4-flash",
+  "provider": {
+    "deepseek": {
+      "npm": "@ai-sdk/anthropic",
+      "name": "DeepSeek",
+      "options": {
+        "baseURL": "https://api.deepseek.com/anthropic",
+        "apiKey": "{env:DEEPSEEK_API_KEY}"
+      },
+      "models": {
+        "deepseek-v4-flash": {
+          "name": "DeepSeek-V4-Flash"
+        }
+      }
+    }
+  },
+  "permission": {
+    "read": {
+      "*": "allow",
+      "*.env": "deny",
+      "*.env.*": "deny",
+      "*.env.example": "allow"
+    },
+    "edit": {
+      "*": "ask"
+    },
+    "bash": {
+      "*": "ask",
+      "pwd": "allow",
+      "ls*": "allow",
+      "rg*": "allow",
+      "git status*": "allow",
+      "node --check*": "allow",
+      "npm test*": "allow",
+      "npm run build*": "allow",
+      "rm *": "deny",
+      "git push --force*": "deny"
+    },
+    "webfetch": "allow"
+  }
+}
