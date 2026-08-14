@@ -198,9 +198,10 @@ def crawl_structure(root_url: str, max_depth: int = 4, max_links: int = 30) -> d
                 node["category"] = _categorize_list(anchor, url, info_kws, notice_kws)
             nodes.append(node)
 
-        # home/列表页/详情页/info/other 不递归；外链不深入。
-        # 例外：根页（home，depth 0）必须递归，因为首页兼作导航入口。
-        if page_type == "home" or page_type not in ("list", "detail", "info", "other"):
+        # list/detail/other 不递归；home 与 info 递归。
+        # home（depth 0）必须递归，因为首页兼作导航入口；
+        # info（如学院简介/师资队伍等栏目）递归展开子栏目，使结构树完整（不选为爬取入口）。
+        if page_type == "home" or page_type not in ("list", "detail", "other"):
             if depth < max_depth:
                 all_links = _extract_links(html, url, domain)
                 if len(all_links) > max_links:

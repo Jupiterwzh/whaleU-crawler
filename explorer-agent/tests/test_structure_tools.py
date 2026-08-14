@@ -251,3 +251,27 @@ def test_list_category_notice_vs_info():
     by_url = {n["url"]: n for n in tree["nodes"]}
     assert by_url["https://cs.nju.edu.cn/tzgg/list.htm"]["category"] == "notice"
     assert by_url["https://cs.nju.edu.cn/jsgk/list.htm"]["category"] == "info"
+
+
+def test_crawl_structure_recurses_info_pages():
+    """info 页（如学院简介）应递归展开子栏目，使结构树完整。"""
+    pages = {
+        "https://cs.nju.edu.cn/": HOME_HTML,
+        "https://cs.nju.edu.cn/intro.htm": (
+            "<html><body><h1>学院简介</h1>"
+            '<a href="/1650/list.htm">学院概览</a>'
+            '<a href="/1651/list.htm">师资队伍</a>'
+            "</body></html>"
+        ),
+    }
+    def fake_get(url, **kw):
+        resp = type("R", (), {})()
+        resp.text = pages.get(url, DETAIL_HTML)
+        resp.raise_for_status = lambda: None
+        return resp
+    with patch("httpx.get", side_effect=fake_get):
+        tree = crawl_structure("https://cs.nju.edu.cn/", max_depth=2)
+    nodes = tree["nodes"]
+    # 学院简介的 info 子栏目（1650/1651）应被遍历到（作为 info 节点，不选为入口）
+    assert any("1650/list.htm" in n["url"] for n in nodes), f"info 子栏目未展开: {[n['url'] for n in nodes]}"
+    assert any("1651/list.htm" in n["url"] for n in nodes)
