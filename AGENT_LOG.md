@@ -800,3 +800,24 @@ data/checkpoints/<domain>.crash.json    特殊暂存 0/1
 - **SPEC 一致性修正**：LLM 供应商（CherryIN→DeepSeek 官方）、分发行（PyPI→Docker）已按真实实现更新 SPEC §5/§7/§8。
 
 ---
+
+## 2026-08-13 会话二十：Docker 验证 + 非交互模式
+
+### [AI] Docker 验证
+- 用户已装 Docker Desktop（WSL 集成可用），`docker build -t whalequery .` 成功
+- 首次 `docker run` 失败：走 `ensure_key()` 首启引导（getpass EOFError）
+- **根因**：`.dockerignore` 只排除 explorer-agent/.env，`query-agent/.env` 被复制进镜像，`load_env(override=True)` 用它覆盖了 `-e LLM_API_KEY`
+- **修复**：`.dockerignore` 改 `**/.env` 排除所有 .env；agent_loop 加 `_interactive_input()`（EOFError 时自动返回 y，支持 Docker/CI 非交互）
+- 重新 build + run 验证通过：key 生效、RAG 检索 6 条通知、非交互完整输出
+
+### [AI] §3.x 核对结论（真实）
+- §3.3 技术栈：✅ SPEC 已对齐 DeepSeek/Docker
+- §3.4 规模深度：✅ Docker build+run 已验证（从零运行检验达成）
+- §3.6 工具链：✅ worktree 偏离按项目历史如实标注；冷启动如实标注补做
+- 纯后端项目，§五.9 WebUI 豁免（通用要求.md 已标"不需要"）
+
+### 待办（无关文档/本地工具/待办.md）
+- [ ] 冷启动测试确认（是否补"实现前"演示，可选）
+- [ ] 逐 Agent 验收（explorer/query/rag-manager/crawler）
+
+---
