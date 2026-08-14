@@ -194,7 +194,7 @@ def test_confirm_preview_includes_all_candidates(tmp_path, monkeypatch):
 
 
 def test_build_marked_tree():
-    """程序生成带标记的完整结构树：所有节点 + ✅选中/⚠️未选/❌功能页/详情/外链 标记。"""
+    """程序生成带标记的结构树：栏目节点展示，detail/error 折叠避免洪水。"""
     from src.agent_loop import _build_marked_tree
     nodes = [
         {"index": 1, "url": "https://cs.nju.edu.cn/", "title": "首页", "type": "home", "depth": 0},
@@ -205,13 +205,15 @@ def test_build_marked_tree():
     ]
     selected = {"https://cs.nju.edu.cn/1702/list.htm"}  # 院内公告被选中
     tree = _build_marked_tree(nodes, selected)
-    # 所有节点都在（全站点合并）
-    assert "学院简介" in tree and "院内公告" in tree and "具体通知" in tree and "概览" in tree
+    # 栏目节点展示
+    assert "学院简介" in tree and "院内公告" in tree and "概览" in tree
+    # detail 折叠（不逐条列具体通知）
+    assert "具体通知" not in tree
+    assert "折叠" in tree and "详情页" in tree
     # 标记正确
     assert "✅选中" in tree and "1702/list.htm" in tree.split("✅选中")[1]
     assert "⚠️未选" in tree and "1650/list.htm" in tree.split("⚠️未选")[1]
-    assert "❌info" in tree or "❌信息" in tree
-    assert "❌详情" in tree
+    assert "❌信息" in tree
 
 
 def test_build_marked_tree_shows_user_added_urls():
@@ -241,3 +243,24 @@ def test_confirm_preview_warns_truncated():
     loop._structure_truncated = True
     preview = loop._confirm_preview("")
     assert "⚠️" in preview and "遍历可能不完整" in preview
+
+
+def test_build_marked_tree_collapses_leaf_noise():
+    """detail/error/other 叶节点应折叠为汇总，不逐条平铺（避免洪水）。"""
+    from src.agent_loop import _build_marked_tree
+    nodes = [
+        {"index": 1, "url": "https://cs.nju.edu.cn/", "title": "首页", "type": "home", "depth": 0},
+        {"index": 2, "url": "https://cs.nju.edu.cn/1702/list.htm", "title": "院内公告", "type": "list", "depth": 1},
+        {"index": 3, "url": "https://cs.nju.edu.cn/c50174a/page.htm", "title": "具体通知", "type": "detail", "depth": 2},
+        {"index": 4, "url": "https://cs.nju.edu.cn/rl/people/liuy/index.htm", "title": "刘洋", "type": "error", "depth": 2},
+        {"index": 5, "url": "https://cs.nju.edu.cn/rl/members.htm", "title": "团队成员", "type": "middle", "depth": 1},
+        {"index": 6, "url": "https://cs.nju.edu.cn/rl/people/wangh/index.htm", "title": "王辉", "type": "detail", "depth": 2},
+    ]
+    tree = _build_marked_tree(nodes, set())
+    # 栏目级节点展示
+    assert "院内公告" in tree and "团队成员" in tree
+    # 具体通知/失败页不逐条列
+    assert "c50174a" not in tree
+    assert "刘洋" not in tree
+    # 折叠汇总说明
+    assert "详情页" in tree and "已折叠" in tree

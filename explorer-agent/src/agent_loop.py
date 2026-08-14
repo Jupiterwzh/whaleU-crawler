@@ -36,47 +36,61 @@ def _format_list_candidates(cands: list[dict]) -> str:
 
 
 def _build_marked_tree(nodes: list[dict], selected_urls: set[str]) -> str:
-    """程序生成带标记的完整结构树：所有节点 + 类型/选中标记。
+    """程序生成带标记的结构树：展示栏目级节点，折叠 detail/error 叶节点避免洪水。
 
     标记规则：
-    - url ∈ selected_urls → ✅选中（爬取入口）
-    - type=list 且未选 → ⚠️未选
-    - type=info → ❌信息栏目（展开子栏目，不爬）
-    - type=detail → ❌详情页
-    - type=other → ❌功能页
+    - url ∈ selected_urls → ✅选中（爬取入口，任何类型都展示）
+    - type=list → ⚠️未选
+    - type=info → ❌信息栏目
+    - type=middle → 中间页
     - type=home → 首页
-    - type=error → ❌抓取失败
-    按 depth 缩进近似树形。
+    - type=other → ❌功能页（折叠计数）
+    - type=detail → 详情页（折叠计数）
+    - type=error → 抓取失败（折叠计数）
     """
     if not nodes:
         return "（无节点）"
     lines = []
     node_urls = {n.get("url") for n in nodes}
-    # 选中的 URL 不在节点里 → 用户新增（可能是 crawl_structure 未遍历到的页面）
     extra_selected = sorted(selected_urls - node_urls)
+    collapsed = {"detail": 0, "error": 0, "other": 0}
     for n in nodes:
-        depth = n.get("depth", 0)
-        indent = "│   " * max(depth - 1, 0) + ("├── " if depth > 0 else "")
-        title = n.get("title") or "(无标题)"
         url = n.get("url", "")
         ntype = n.get("type", "")
         if url in selected_urls:
-            mark = "✅选中"
-        elif ntype == "list":
+            # 选中的入口必须展示（即使 detail/error）
+            depth = n.get("depth", 0)
+            indent = "│   " * max(depth - 1, 0) + ("├── " if depth > 0 else "")
+            title = n.get("title") or "(无标题)"
+            lines.append(f"{indent}[✅选中] {title} ({url})")
+            continue
+        if ntype in ("detail", "error", "other"):
+            collapsed[ntype] = collapsed.get(ntype, 0) + 1
+            continue
+        depth = n.get("depth", 0)
+        indent = "│   " * max(depth - 1, 0) + ("├── " if depth > 0 else "")
+        title = n.get("title") or "(无标题)"
+        if ntype == "list":
             mark = "⚠️未选"
         elif ntype == "info":
             mark = "❌信息栏目"
-        elif ntype == "detail":
-            mark = "❌详情页"
-        elif ntype == "other":
-            mark = "❌功能页"
+        elif ntype == "middle":
+            mark = "中间页"
         elif ntype == "home":
             mark = "首页"
-        elif ntype == "error":
-            mark = "❌抓取失败"
         else:
             mark = ntype
         lines.append(f"{indent}[{mark}] {title} ({url})")
+    # 折叠汇总
+    folded = []
+    if collapsed.get("detail"):
+        folded.append(f"{collapsed['detail']} 个详情页")
+    if collapsed.get("error"):
+        folded.append(f"{collapsed['error']} 个抓取失败页")
+    if collapsed.get("other"):
+        folded.append(f"{collapsed['other']} 个功能页")
+    if folded:
+        lines.append(f"└── [折叠] {'、'.join(folded)}（已折叠，非列表入口）")
     for url in extra_selected:
         lines.append(f"├── [⚠️不在结构树] (用户指定入口 {url}——不在遍历到的结构中，除非确切知道自己在做什么，否则不要自行添加；若执意要加请直接修改策略 JSON，Agent 制作者不承担任何责任)")
     return "\n".join(lines)
