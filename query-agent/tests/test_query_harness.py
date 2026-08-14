@@ -160,3 +160,24 @@ def test_run_explorer_failure_advice_after_twice(tmp_path, monkeypatch):
     loop = AgentLoop(h, llm)
     loop.run("智软通知")
     assert loop._explorer_failures >= 2
+
+
+def test_list_sites_all_prints_full(tmp_path, monkeypatch, capsys):
+    """list_sites(all=true) 时工具结果完整打印（用户要求列全）。"""
+    monkeypatch.chdir(Path(__file__).parent.parent)
+    from src.agent_loop import AgentLoop
+    from src.harness import Harness
+    store = RAGStore(str(tmp_path))
+    h = Harness.from_yaml("agent.yaml", rag_store=store)
+    llm = MagicMock()
+    llm.chat.side_effect = [
+        {"text": "列全", "tool_calls": [{"name": "list_sites", "arguments": {"all": True}, "id": "1"}]},
+        {"text": "完成", "tool_calls": None},
+    ]
+    h.tools.get("list_sites").handler = MagicMock(return_value="已知站点候选：\n- 医学院 (med.nju.edu.cn)\n- 计算机学院 (cs.nju.edu.cn)")
+    monkeypatch.setattr("builtins.input", lambda prompt="": "y")
+    loop = AgentLoop(h, llm)
+    loop.run("列出全部站点")
+    out = capsys.readouterr().out
+    assert "全部站点候选" in out
+    assert "med.nju.edu.cn" in out, "all=true 时应完整展示候选"

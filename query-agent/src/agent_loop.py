@@ -278,10 +278,13 @@ class AgentLoop:
                         self._explorer_failures = 0
                     context.append({"role": "tool", "tool_call_id": tc["id"], "content": result})
                     H.tracer.record(tracer_step, "", action, result)
-                    # list_sites 结果对用户是噪音（候选清单），只显示条数；其余工具显示结果（截断 2000）
+                    # list_sites 结果：用户要求列全（all=true）时完整展示；Agent 内部对照（默认推荐）只显示条数
                     if tc["name"] == "list_sites":
                         _n = result.count("\n")
-                        print(f"  结果: 已返回 {_n} 条站点候选（供 Agent 对照，不逐条展示）")
+                        if tc["arguments"].get("all"):
+                            print(f"  结果（全部站点候选）：\n{result[:4000]}")
+                        else:
+                            print(f"  结果: 已返回 {_n} 条相关候选（供 Agent 对照，不逐条展示）")
                     else:
                         print(f"  结果: {result[:2000]}")
 
