@@ -27,7 +27,8 @@ def _format_search_results(hits: list[dict]) -> str:
         return "RAG 无匹配结果"
     lines = [f"命中 {len(hits)} 条："]
     for i, hit in enumerate(hits, 1):
-        lines.append(f"{i}. [{hit.get('date', '')}] {hit.get('title', '')} ({hit.get('url', '')})")
+        v = _validity_text(hit)
+        lines.append(f"{i}. [{hit.get('date', '')}] {hit.get('title', '')} ({hit.get('url', '')}){v}")
         snippet = (hit.get("snippet") or hit.get("content") or "").strip()
         if snippet:
             lines.append(f"   正文片段: {snippet[:100]}")
@@ -35,13 +36,25 @@ def _format_search_results(hits: list[dict]) -> str:
 
 
 def _format_list_all(hits: list[dict], domain: str) -> str:
-    """按 domain 列出全部通知（不靠关键词），日期降序。"""
+    """按 domain 列出有效期内通知（日期降序），每条附有效期。"""
     if not hits:
-        return f"{domain} 暂无已收录通知"
-    lines = [f"{domain} 共收录 {len(hits)} 条通知："]
+        return f"{domain} 暂无有效期内通知"
+    lines = [f"{domain} 共收录 {len(hits)} 条有效通知："]
     for i, hit in enumerate(hits, 1):
-        lines.append(f"{i}. [{hit.get('date', '')}] {hit.get('title', '')} ({hit.get('url', '')})")
+        v = _validity_text(hit)
+        lines.append(f"{i}. [{hit.get('date', '')}] {hit.get('title', '')} ({hit.get('url', '')}){v}")
     return "\n".join(lines)
+
+
+def _validity_text(hit: dict) -> str:
+    """有效期展示文本：有效期至 valid_until，或有效天数 effective_days。"""
+    until = hit.get("valid_until")
+    if until:
+        return f" [有效期至 {until}]"
+    days = hit.get("effective_days")
+    if days:
+        return f" [有效 {days} 天]"
+    return ""
 
 
 def _to_ingest_records(jsonl_path: Path, fallback_domain: str) -> list[dict]:

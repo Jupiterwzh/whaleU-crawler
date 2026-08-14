@@ -237,13 +237,16 @@ class RAGStore:
                 "date": d,
                 "content": doc.get("content", ""),
                 "domain": dom,
+                "valid_from": doc.get("valid_from"),
+                "valid_until": doc.get("valid_until"),
+                "effective_days": doc.get("effective_days"),
                 "score": round(score, 4),
                 "snippet": self._make_snippet(doc.get("content", ""), query),
             })
         return result
 
     def list_by_domain(self, domain: str, limit: int = 50) -> list[dict]:
-        """列出某 domain 的全部文档（不依赖关键词），按日期降序。"""
+        """列出某 domain 的**有效期内**文档（不依赖关键词），按日期降序，每条含有效期字段。"""
         docs = []
         for p in self._docs.glob(f"{domain}.*.jsonl"):
             for line in p.read_text(encoding="utf-8", errors="replace").splitlines():
@@ -253,8 +256,20 @@ class RAGStore:
                     doc = json.loads(line)
                 except json.JSONDecodeError:
                     continue
-                if doc.get("domain") == domain:
-                    docs.append(doc)
+                if doc.get("domain") != domain:
+                    continue
+                if not self._is_valid(doc):
+                    continue  # 只列有效期内
+                docs.append({
+                    "title": doc.get("title", ""),
+                    "url": doc.get("url", ""),
+                    "date": doc.get("date", ""),
+                    "content": doc.get("content", ""),
+                    "domain": doc.get("domain", ""),
+                    "valid_from": doc.get("valid_from"),
+                    "valid_until": doc.get("valid_until"),
+                    "effective_days": doc.get("effective_days"),
+                })
         docs.sort(key=lambda d: d.get("date", ""), reverse=True)
         return docs[:limit]
 

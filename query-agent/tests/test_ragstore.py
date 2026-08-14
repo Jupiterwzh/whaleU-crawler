@@ -69,3 +69,30 @@ def test_empty_content_falls_back_title(tmp_path):
     # content 空，标题相同 → 判重（退回首标题）
     store.ingest([{"title": "同一标题", "content": "", "url": "https://x/u2", "domain": "cs.nju.edu.cn", "date": "2026-08-01"}])
     assert store._doc_count() == 1
+
+
+def test_list_by_domain_valid_only_with_validity(tmp_path):
+    """list_by_domain 只返回有效期内文档，且每条含 valid_until 字段。"""
+    store = RAGStore(str(tmp_path))
+    # 一条有效（未来过期）、一条已过期
+    store.ingest([{"title": "有效通知", "content": "有效正文足够长", "url": "https://cs/u1", "domain": "cs.nju.edu.cn", "date": "2026-08-01"}])
+    store.ingest([{"title": "过期通知", "content": "过期正文足够长", "url": "https://cs/u2", "domain": "cs.nju.edu.cn", "date": "2025-01-01"}])
+    # 给过期那条标过期
+    store.apply_validity("cs.nju.edu.cn.2025-01-01.1", valid_until="2025-06-01")
+    store.build_index()
+    hits = store.list_by_domain("cs.nju.edu.cn", 50)
+    titles = [h["title"] for h in hits]
+    assert "有效通知" in titles
+    assert "过期通知" not in titles, "已过期通知不应列出"
+    assert "valid_until" in hits[0], "每条应含 valid_until 字段"
+
+
+def test_search_returns_validity(tmp_path):
+    """search 返回含 valid_until 字段。"""
+    store = RAGStore(str(tmp_path))
+    store.ingest([{"title": "考试通知", "content": "考试安排正文足够长", "url": "https://cs/u1", "domain": "cs.nju.edu.cn", "date": "2026-08-01"}])
+    store.apply_validity("cs.nju.edu.cn.2026-08-01.1", valid_until="2026-12-31")
+    store.build_index()
+    hits = store.search("考试", top_k=5)
+    assert len(hits) == 1
+    assert hits[0]["valid_until"] == "2026-12-31"
