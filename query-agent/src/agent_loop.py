@@ -51,15 +51,25 @@ def _maybe_dispatch_interact(tool_name: str, target: str, result: str) -> str:
     """
     if tool_name not in _DISPATCH_INTERACT_TOOLS:
         return ""
-    prompt = (
-        f"\n[分发交互] 刚执行了 {tool_name}({target[:60]})\n"
-        f"  结果: {result[:200]}\n"
-        "  确认继续请输入 y；\n"
-        "  如需修改对应/换目标站点，直接输入新网址（含 http://）；\n"
-        "  或输入任何反馈/要求（如“列出对应”“不对，应该用另一个站”）；\n"
-        "  输入 exit 退出。\n"
-        "  → "
-    )
+    # list_sites 的 112 个候选对用户无意义（Agent 内部对照用），交互提示不展示，只让用户确认目标站
+    if tool_name == "list_sites":
+        prompt = (
+            "\n[分发交互] 已对照站点候选。请确认要处理的目标网站：\n"
+            "  输入 y 继续（按 Agent 判断的站点处理）；\n"
+            "  如需修改/指定，直接输入网址（含 http://）或反馈（如：指定用 xx 站）；\n"
+            "  输入 exit 退出。\n"
+            "  → "
+        )
+    else:
+        prompt = (
+            f"\n[分发交互] 刚执行了 {tool_name}({target[:60]})\n"
+            f"  结果: {result[:200]}\n"
+            "  确认继续请输入 y；\n"
+            "  如需修改对应/换目标站点，直接输入新网址（含 http://）；\n"
+            "  或输入任何反馈/要求（如：列出对应 / 不对，应该用另一个站）；\n"
+            "  输入 exit 退出。\n"
+            "  → "
+        )
     try:
         ans = input(prompt).strip()
     except EOFError:
@@ -268,7 +278,7 @@ class AgentLoop:
                         self._explorer_failures = 0
                     context.append({"role": "tool", "tool_call_id": tc["id"], "content": result})
                     H.tracer.record(tracer_step, "", action, result)
-                    print(f"  结果: {result[:200]}")
+                    print(f"  结果: {result[:2000]}")
 
                     # —— 分发 Agent 专用交互点：关键步骤后暂停等用户 ——
                     interact = _maybe_dispatch_interact(tc["name"], target, result)
