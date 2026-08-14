@@ -46,3 +46,35 @@ def test_manager_pure_fn_fallback_no_llm(tmp_path, monkeypatch):
     # 验证 valid_until 被赋为 2026-03-15（文本中最晚日期）
     docs = store._load_all()
     assert docs[0].get("valid_until") == "2026-03-15"
+
+
+def test_cleanup_notices_all_ingested_deletes(tmp_path, monkeypatch):
+    """收录完成：notices 全部已入库 → 询问后删除（y）。"""
+    from rag_manager import cleanup_notices
+    store = RAGStore(str(tmp_path / "rag"))
+    # 构造 notices 文件（内容已入库）
+    notices_dir = tmp_path / "notices"
+    notices_dir.mkdir()
+    f = notices_dir / "notices_test.jsonl"
+    f.write_text('{"title":"通知1","content":"正文内容足够长","url":"https://x/1","publishTime":"2026-08-01"}\n', encoding="utf-8")
+    # 先把内容 ingest 进 RAG（dedup 会存在）
+    store.ingest([{"title":"通知1","content":"正文内容足够长","url":"https://x/1","domain":"x","date":"2026-08-01"}])
+    monkeypatch.setattr("builtins.input", lambda prompt="": "y")
+    deleted = cleanup_notices(store, notices_dir=str(notices_dir))
+    assert not f.exists(), "已收录的 notices 应被删除"
+    assert deleted == 1
+
+
+def test_cleanup_notices_not_ingested_keeps(tmp_path, monkeypatch):
+    """未入库的 notices 不删（询问时用户拒绝或内容未收录）。"""
+    from rag_manager import cleanup_notices
+    store = RAGStore(str(tmp_path / "rag"))
+    notices_dir = tmp_path / "notices"
+    notices_dir.mkdir()
+    f = notices_dir / "notices_test2.jsonl"
+    f.write_text('{"title":"未入库通知","content":"未收录的正文内容","url":"https://x/9","publishTime":"2026-08-01"}\n', encoding="utf-8")
+    # 不 ingest → 用户拒绝删除
+    monkeypatch.setattr("builtins.input", lambda prompt="": "n")
+    deleted = cleanup_notices(store, notices_dir=str(notices_dir))
+    assert f.exists(), "未收录的 notices 不应删除"
+    assert deleted == 0

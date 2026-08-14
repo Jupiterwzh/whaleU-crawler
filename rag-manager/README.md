@@ -77,6 +77,15 @@ python rag_manager.py --rag-dir <路径>   # 指定 RAG 目录（默认自动推
 python rag_manager.py --domain <域名>    # 预留，当前整批处理
 ```
 
+### 爬虫产物清理
+
+`rag_manager.py` 处理完 pending 后，会扫描 `crawler/data/notices_*.jsonl`：
+- 对**全部记录都已入库**的文件，询问用户"是否删除该爬虫产物文件？"（y 删除 / n 保留）
+- 未全部入库的文件**不询问**（可能有未收录记录，删除会丢数据）
+- 这是"收录完成 → 清理中间产物"的流程，避免 notices 文件堆积
+
+> 注意：删除的是**爬虫原始输出**（notices jsonl），**不影响 RAG 里的文档**。RAG 文档仍按有效期机制管理，不物理删除。
+
 ---
 
 ## 常见问题

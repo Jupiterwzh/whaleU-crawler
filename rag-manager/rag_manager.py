@@ -5,6 +5,7 @@
 → apply_validity 写回 → build_index 重建索引。Task 4 将在数据库更新后触发本 Agent。
 """
 import argparse
+import json
 import os
 import sys
 from pathlib import Path
@@ -108,6 +109,64 @@ class RagManager:
         return Path(__file__).resolve().parent
 
 
+def cleanup_notices(store: RAGStore, notices_dir: str | None = None) -> int:
+    """收录完成后清理已入库的爬虫产物（notices_*.jsonl）。
+
+    对每个 notices 文件，若其全部记录都已收录进 RAG（dedup_hash 存在），
+    询问用户是否删除；y 则删除（计入返回），n 则保留。
+    返回删除的文件数。
+    """
+    if notices_dir is None:
+        notices_dir = str(_PROJ_ROOT / "crawler" / "data")
+    from urllib.parse import urlparse
+
+    ndir = Path(notices_dir)
+    deleted = 0
+    for p in sorted(ndir.glob("notices_*.jsonl")):
+        if not p.exists():
+            continue
+        # 逐条判断是否全部已入库
+        all_ingested = True
+        total = 0
+        for line in p.read_text(encoding="utf-8", errors="replace").splitlines():
+            if not line.strip():
+                continue
+            try:
+                raw = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            total += 1
+            url = raw.get("url") or ""
+            domain = urlparse(url).netloc if "://" in url else ""
+            date = (raw.get("publishTime") or raw.get("date") or "")[:10]
+            rec = {
+                "domain": domain,
+                "content": raw.get("content") or f"{raw.get('title','')} {url}".strip(),
+                "url": url,
+                "title": raw.get("title", ""),
+                "date": date,
+            }
+            dedup = store._dedup_key(rec)
+            old_dedup = store._sha(rec.get("url", ""), rec.get("title", ""))
+            # 兼容存量数据：新内容优先 hash 或旧 url+title hash 任一匹配即已入库
+            if not store._has_dedup(dedup) and not store._has_dedup(old_dedup):
+                all_ingested = False
+                break
+        if total == 0 or not all_ingested:
+            continue
+        ans = input(f"爬虫产物 {p.name} 已全部收录进 RAG。是否删除该文件？(y/n): ").strip().lower()
+        if ans in ("y", "yes"):
+            try:
+                p.unlink()
+                deleted += 1
+                print(f"  已删除 {p.name}")
+            except OSError:
+                pass
+        else:
+            print(f"  保留 {p.name}")
+    return deleted
+
+
 def run_batch(rag_dir: str = None) -> str:
     """命令行批处理入口：加载 RAGStore → RagManager.run()。"""
     store = RAGStore(rag_dir or resolve_rag_dir())
@@ -122,6 +181,14 @@ def main():
     parser.add_argument("--rag-dir", help="RAG 数据目录，默认由环境变量/推导决定")
     args = parser.parse_args()
     print(run_batch(args.rag_dir))
+    # 收录完成后，询问用户是否删除已入库的爬虫产物（notices_*.jsonl）
+    try:
+        store = RAGStore(args.rag_dir or resolve_rag_dir())
+        n = cleanup_notices(store)
+        if n > 0:
+            print(f"已删除 {n} 个已收录的爬虫产物文件")
+    except Exception as e:
+        print(f"（清理爬虫产物跳过：{e}）")
     if args.domain:
         print(f"（--domain {args.domain}：当前版本为整批处理，忽略过滤）")
 
