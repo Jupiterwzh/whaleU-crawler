@@ -86,6 +86,8 @@ python -m src.keys has    # 是否已配置
 ```
 
 > 说明：无桌面环境（WSL/纯 Linux/Docker）下系统钥匙串可能不可用，`set` 会自动降级写入 `.env`。查看 key 状态始终只显示长度，不回显明文。
+>
+> 路径无需手动配置：`STRATEGIES_DIR` / `CRAWLER_SCRIPT` / `RAG_DIR` 等未设置时自动推导到项目内标准位置（见各 Agent `.env.example` 注释），仅非标准布局才需指定。
 
 ### 4. 验证安装
 

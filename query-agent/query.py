@@ -23,6 +23,10 @@ from shared.rag.ragstore import RAGStore
 
 def load_env():
     load_dotenv(Path(__file__).resolve().parent / ".env", override=True)
+    if not os.environ.get("CRAWLER_SCRIPT"):
+        os.environ["CRAWLER_SCRIPT"] = str(
+            Path(__file__).resolve().parent.parent / "crawler" / "src" / "collectors" / "collector.js"
+        )
 
 
 def resolve_rag_dir() -> str:

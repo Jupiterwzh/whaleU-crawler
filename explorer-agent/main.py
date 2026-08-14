@@ -18,6 +18,16 @@ from src.experience import load_experiences, to_context
 
 def load_env():
     load_dotenv(Path(__file__).resolve().parent / ".env", override=True)
+    _infer_paths()
+
+
+def _infer_paths():
+    """补齐未配置的路径 env：自动推导到项目内标准位置，无需手填。"""
+    project_root = Path(__file__).resolve().parent.parent
+    if not os.environ.get("STRATEGIES_DIR"):
+        os.environ["STRATEGIES_DIR"] = str(project_root / "crawler" / "data" / "strategies")
+    if not os.environ.get("CRAWLER_SCRIPT"):
+        os.environ["CRAWLER_SCRIPT"] = str(project_root / "crawler" / "src" / "collectors" / "collector.js")
 
 
 def _extract_domain(text: str) -> str:
@@ -42,11 +52,8 @@ def main():
 
     data_dir = os.environ.get("DATA_DIR", "")
     if not data_dir:
-        strategies_dir = os.environ.get("STRATEGIES_DIR", "")
-        if strategies_dir:
-            data_dir = str(Path(strategies_dir).resolve().parent)
-        else:
-            data_dir = str(Path(__file__).resolve().parent.parent / "data")
+        strategies_dir = os.environ["STRATEGIES_DIR"]
+        data_dir = str(Path(strategies_dir).resolve().parent)
     store = FileStore(base_dir=data_dir)
 
     # ---- 前导 ----
@@ -59,12 +66,10 @@ def main():
         return
 
     # ---- 构造 goal ----
-    strategies_dir = os.environ.get("STRATEGIES_DIR", "")
-    if strategies_dir:
-        strategies_dir = str(Path(strategies_dir).resolve())
+    strategies_dir = str(Path(os.environ["STRATEGIES_DIR"]).resolve())
+    crawler_script = os.environ.get("CRAWLER_SCRIPT", "")
     if explore_only:
-        strategy_path = f"{strategies_dir}/{domain}.json" if strategies_dir else "策略目录"
-        crawler_script = os.environ.get("CRAWLER_SCRIPT", "")
+        strategy_path = f"{strategies_dir}/{domain}.json"
         goal = (f"探索 {url} 的通知公告入口，生成爬取策略 JSON，写入 {strategy_path}。"
                 f"不要调用爬虫执行爬取。"
                 f"生成后必须验证：用 run_shell 执行 `node {crawler_script} --verify {strategy_path}` "
@@ -72,7 +77,7 @@ def main():
     else:
         user_goal = " ".join(args) or input("🎯 任务: ")
         ctx = result.goal_context
-        suffix = f"策略 JSON 保存到 {strategies_dir}/{domain}.json" if strategies_dir else ""
+        suffix = f"策略 JSON 保存到 {strategies_dir}/{domain}.json"
         goal = f"{user_goal}。{suffix}。{ctx}"
     goal = goal.strip("。 ")
     exp_text = to_context(load_experiences())
