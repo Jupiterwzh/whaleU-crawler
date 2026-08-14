@@ -906,3 +906,22 @@ data/checkpoints/<domain>.crash.json    特殊暂存 0/1
 - **交互需兼顾非交互环境**（Docker/CI）：EOFError 自动继续，否则容器卡死。
 
 ---
+
+## 2026-08-14 设计决策记录：explore-only 草稿即返回（妥协）+ 上层↔策略 Agent 双向通信（未来改善）
+
+### [AI+人] 设计妥协：--explore-only 写草稿后立即返回（跳过 verify）
+
+- **背景**：测试 5 分发链中 `run_explorer` 300s 超时。根因：explorer 完成探索并写草稿后，规则要求继续 `--verify`（实测每入口），探索+验证累积超 300s。草稿本身质量高（software 3 入口，苏迪 dataList 识别正确），但 explorer 没及时返回。
+- **决策**：`--explore-only` 模式（被 query-agent run_explorer / crawler 委托调用）写 `<domain>.draft.json` 后**立即结束**（程序层强制，agent_loop 检测 write_file draft + explore_only 即返回，不依赖 LLM 遵守规则）。
+- **代价（妥协）**：草稿不经过 explorer 侧 verify，无效入口可能残留。**缓解**：verify 推迟到 run_crawler——collector 确认草稿后实际爬取每入口，无效入口在爬取时暴露（真实验证闭环仍在，只是验证点后移）。交互式（宿主机直接 `python main.py`）仍保留 verify。
+- **为何妥协**：分发链场景下，探索+verify 全做完超出 run_explorer 超时；草稿即返回换取分发链可用，正确性由后续爬取实测兜底。这是时间约束下的取舍，非理想方案。
+- 关联：collector 复用草稿（confirmDraft 转正后爬取，不重复委托 explorer）——commit `83a185b`。
+
+### [AI+人] 未来可改善：上层 Agent 回复策略 Agent / 双向通信
+
+- **现状**：策略 Agent 被分发 Agent（run_explorer）spawn 时 stdin 被 `capture_output=True` 捕获，所有 `input()` 遇 EOFError。当前处理：explorer 各确认点 EOFError 兜底取**默认值**（自答，如确认→y、备份→备份），不崩溃。分发 Agent 只能感知策略 Agent 做了什么（经 run_explorer 返回的 stdout 尾段），**不能控制/干预**。
+- **理想**：双向通信——run_explorer 改 `sp.Popen` 交互式：策略 Agent 需输入时输出问题标记（如 `[EXPLORER_QUESTION]`），分发 Agent LLM 读取后生成回答写回 stdin，策略 Agent 继续。这样上层 Agent 能**主动回答策略 Agent 的问题**（如"该入口保留与否"由分发 Agent 结合用户意图决策）。
+- **未实现原因**：Popen 双向通信复杂度高（实时读 stdout、问题识别、回答写回、同步/超时/异常处理），时间约束（最后阶段）下风险大。当前"自答"保证分发链可用。
+- **建议**：列入后续增强——优先级低于核心功能；如需实现，从 run_explorer 改 Popen + explorer 问题标记协议入手。
+
+---
