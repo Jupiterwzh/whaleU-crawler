@@ -90,6 +90,68 @@ def make_rag_manager_tools() -> list[Tool]:
         added = _store().ingest(records)
         return f"入库 {len(records)} 条记录，新增 {added} 条（其余去重丢弃）"
 
+    def dedupe_docs() -> str:
+        """扫描 RAG，删除内容重复的文档（每组保留一条，优先含有效时间的）。"""
+        import json as _json
+        store = _store()
+        docs_dir = store._docs
+        # 读全部分片：[(slice_path, doc)]
+        all_docs = []
+        for p in sorted(docs_dir.glob("*.jsonl")):
+            lines = p.read_text(encoding="utf-8", errors="replace").splitlines()
+            for line in lines:
+                if line.strip():
+                    try:
+                        doc = _json.loads(line)
+                    except _json.JSONDecodeError:
+                        continue
+                    all_docs.append((p, doc))
+        # 按内容 dedup key 分组
+        groups = {}
+        for p, doc in all_docs:
+            rec = {
+                "domain": doc.get("domain", ""),
+                "content": doc.get("content", ""),
+                "url": doc.get("url", ""),
+                "title": doc.get("title", ""),
+                "date": doc.get("date", ""),
+            }
+            key = store._dedup_key(rec)
+            groups.setdefault(key, []).append((p, doc))
+        # 每组保留 1，删除其余
+        deleted = 0
+        keep_ids = set()
+        for key, items in groups.items():
+            if len(items) <= 1:
+                keep_ids.add(items[0][1]["id"])
+                continue
+            # 保留优先级：含有效时间 > 最早
+            def _score(item):
+                doc = item[1]
+                if doc.get("valid_until") or doc.get("effective_days"):
+                    return 0
+                return 1
+            items_sorted = sorted(items, key=_score)
+            keep = items_sorted[0]
+            keep_ids.add(keep[1]["id"])
+            for p, doc in items_sorted[1:]:
+                deleted += 1
+        # 重写分片（只保留 keep_ids）
+        for p in sorted(docs_dir.glob("*.jsonl")):
+            kept = []
+            for line in p.read_text(encoding="utf-8", errors="replace").splitlines():
+                if not line.strip():
+                    continue
+                try:
+                    doc = _json.loads(line)
+                except _json.JSONDecodeError:
+                    continue
+                if doc.get("id") in keep_ids:
+                    kept.append(line)
+            p.write_text("\n".join(kept) + ("\n" if kept else ""), encoding="utf-8")
+        store.build_index()
+        return f"去重完成：删除 {deleted} 条重复文档，重建索引"
+
     return [
         Tool(
             name="ingest_notices",
@@ -142,6 +204,17 @@ def make_rag_manager_tools() -> list[Tool]:
                 "required": [],
             },
             handler=rebuild_index,
+            require_approval=False,
+        ),
+        Tool(
+            name="dedupe_docs",
+            description="扫描 RAG，删除内容重复的文档（每组保留一条，优先含有效时间的），重建索引。",
+            parameters={
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+            handler=dedupe_docs,
             require_approval=False,
         ),
     ]

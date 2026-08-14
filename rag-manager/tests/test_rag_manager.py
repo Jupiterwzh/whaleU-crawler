@@ -121,3 +121,29 @@ def test_ingest_notices_tool(tmp_path, monkeypatch):
     out = tool.handler(notices_dir=str(notices_dir))
     assert "新增 1" in out
     assert store._doc_count() == 1
+
+
+def test_dedupe_docs_removes_duplicates(tmp_path, monkeypatch):
+    """dedupe_docs：内容相同的重复文档只保留一条（优先含有效时间的）。"""
+    monkeypatch.chdir(Path(__file__).parent.parent)
+    from src.tools.rag_manager_tools import make_rag_manager_tools, set_rag_store
+    store = RAGStore(str(tmp_path / "rag"))
+    set_rag_store(store)
+    # 直接写分片模拟旧重复数据（绕过 ingest 去重）：两条内容相同、URL 不同
+    content = "这是一段足够长的完全相同正文内容用于去重测试"
+    doc1 = {"id": "d.2026-08-01.1", "title": "通知A", "content": content, "url": "https://x/1",
+            "domain": "d", "date": "2026-08-01", "dedup_hash": "x"}
+    doc2 = {"id": "d.2026-08-01.2", "title": "通知B", "content": content, "url": "https://x/2",
+            "domain": "d", "date": "2026-08-01", "dedup_hash": "y", "valid_until": "2026-12-31"}
+    import json as _json
+    slice_path = store._docs / "d.2026-08-01.jsonl"
+    slice_path.write_text(_json.dumps(doc1, ensure_ascii=False) + "\n" + _json.dumps(doc2, ensure_ascii=False) + "\n", encoding="utf-8")
+    assert store._doc_count() == 2
+    tools = make_rag_manager_tools()
+    tool = [t for t in tools if t.name == "dedupe_docs"][0]
+    out = tool.handler()
+    assert "删除 1" in out
+    assert store._doc_count() == 1
+    # 保留的是含有效时间的 doc2
+    remain = store._load_all()
+    assert remain[0]["id"] == "d.2026-08-01.2", "应保留含有效时间的文档"

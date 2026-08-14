@@ -82,10 +82,16 @@ python rag_manager.py
 
 ```bash
 python rag_manager.py --ingest          # 先入库爬虫产物，再处理 pending
+python rag_manager.py --ingest --dedupe # 入库 + 去重
+python rag_manager.py --dedupe          # 只去重（删除内容重复文档）
 python rag_manager.py --ingest --notices-dir <路径>  # 指定爬虫产物目录
 python rag_manager.py --rag-dir <路径>   # 指定 RAG 目录（默认自动推导）
 python rag_manager.py --domain <域名>    # 预留，当前整批处理
 ```
+
+### 去重（dedupe_docs）
+
+`--dedupe` 扫描 RAG，删除**内容重复**的文档（同一内容 key 多份时保留一条，优先含有效时间的），重建索引。用于清理存量重复（如旧版 url+title 去重漏掉的同内容不同 URL 记录）。
 
 ### 爬虫产物清理
 

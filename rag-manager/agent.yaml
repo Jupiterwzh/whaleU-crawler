@@ -24,6 +24,9 @@ tools:
     - name: "rebuild_index"
       module: "src.tools.rag_manager_tools"
       factory: "make_rag_manager_tools"
+    - name: "dedupe_docs"
+      module: "src.tools.rag_manager_tools"
+      factory: "make_rag_manager_tools"
 
 guardrail:
   policy: "./guardrails/policy.yaml"
