@@ -226,6 +226,8 @@ def test_build_marked_tree_shows_user_added_urls():
     assert "9999/list.htm" in tree
     assert "⚠️不在结构树" in tree
     assert "直接修改策略 JSON" in tree
+    assert "不承担任何责任" in tree
+    assert "知道自己在做什么" in tree
 
 
 def test_confirm_preview_warns_truncated():
