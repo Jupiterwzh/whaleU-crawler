@@ -14,7 +14,11 @@ def _confirm(prompt: str, default: bool, wrongs: list) -> bool:
         sys.exit(1)
     prefix = prompt.strip()
     for attempt in range(3):
-        ans = input(prompt).strip()
+        try:
+            ans = input(prompt).strip()
+        except EOFError:
+            # 非交互环境（被上层 Agent spawn）：取默认值，不崩溃
+            return default
         if ans.lower() in ("y", "yes"):
             return True
         if ans.lower() in ("n", "no"):
@@ -119,7 +123,10 @@ def _manage_backups(domain: str, store: FileStore):
     for round_no in range(5):
         if round_no == 3:
             print("⚠️ 已达 3 轮，上限 5 轮")
-        ans = input(f"[备份管理 第{round_no+1}/5轮] 操作: ").strip()
+        try:
+            ans = input(f"[备份管理 第{round_no+1}/5轮] 操作: ").strip()
+        except EOFError:
+            break  # 非交互环境：退出备份管理
         action, idxs = _parse_backup_cmd(ans)
         if action == "exit":
             break

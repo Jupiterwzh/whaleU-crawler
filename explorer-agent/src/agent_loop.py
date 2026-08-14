@@ -7,6 +7,18 @@ from pathlib import Path
 from .llm.client import LLMClient
 
 
+def _interactive_input(prompt: str, default: str = "y") -> str:
+    """交互输入；非交互环境（无 stdin，如被分发 Agent spawn / Docker / CI）时返回默认值。
+
+    这样策略 Agent 被上层（query-agent run_explorer / crawler 委托）调用时，
+    需要输入的确认点自动取默认值（通常 y=自动确认），不会因 EOFError 崩溃。
+    """
+    try:
+        return input(prompt)
+    except EOFError:
+        return default
+
+
 _PREVIEW_LIMIT = 4000
 
 
@@ -123,7 +135,7 @@ def _ask_experience_confirm(text: str, exp_path=None):
     exp_path 供测试注入临时路径，默认用真实经验库。"""
     try:
         from src.experience import load_experiences, save_experiences, merge_from_text
-        exp_ans = input("是否将本次发现的通用规律存入经验库？（y/否）: ").strip().lower()
+        exp_ans = _interactive_input("是否将本次发现的通用规律存入经验库？（y/否）: ", default="n").strip().lower()
         if exp_ans in ("y", "yes"):
             data = load_experiences(exp_path)
             updated = merge_from_text(data, text or "")
@@ -234,7 +246,7 @@ class AgentLoop:
                     print(f"\n=== 第 {round_idx + 1} 轮探索完成 ===\n")
 
                     if round_idx == max_adjustments:
-                        ans = input(f"Agent 输出:\n{self._confirm_preview(text)}\n\n最终确认? (y=确认/暂存=保存退出/放弃=不保存退出): ")
+                        ans = _interactive_input(f"Agent 输出:\n{self._confirm_preview(text)}\n\n最终确认? (y=确认/暂存=保存退出/放弃=不保存退出): ")
                         if ans.lower() == "y":
                             _ask_experience_confirm(text, self.experience_path)
                             H.tracer.flush()
@@ -252,7 +264,7 @@ class AgentLoop:
                     if remaining > 0:
                         print(f"（还可调整 {remaining} 次）")
                     print("（输入 暂存=保存当前结果并退出，exit=直接退出）")
-                    ans = input(f"Agent 输出:\n{self._confirm_preview(text)}\n\n确认? (y/调整建议): ")
+                    ans = _interactive_input(f"Agent 输出:\n{self._confirm_preview(text)}\n\n确认? (y/调整建议): ")
                     if ans.lower() == "y":
                         _ask_experience_confirm(text, self.experience_path)
                         H.tracer.flush()

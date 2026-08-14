@@ -59,7 +59,10 @@ class Guardrail:
                     for k, v in args.items()
                 )
                 for attempt in range(3):
-                    ans = input(f"⚠️ [{tool}] {reason}\n  参数: {args_preview}\n  允许吗? (y/n): ").strip().lower()
+                    try:
+                        ans = input(f"⚠️ [{tool}] {reason}\n  参数: {args_preview}\n  允许吗? (y/n): ").strip().lower()
+                    except EOFError:
+                        return False, f"非交互环境，默认拒绝: {reason}"
                     if ans in ("y", "yes"):
                         return True, f"用户批准: {reason}"
                     if ans in ("n", "no"):

@@ -24,7 +24,10 @@ def postflight(domain: str, store: FileStore, old_data: dict | None = None):
         print(f"策略已保存: {store.strategy_path(domain)}")
         return
 
-    ans = input("已有策略，删除还是备份？（删除/备份）: ")
+    try:
+        ans = input("已有策略，删除还是备份？（删除/备份）: ")
+    except EOFError:
+        ans = "备份"  # 非交互环境：默认备份，不崩溃
     if "删除" in ans:
         store.strategy_write(domain, new_data)
         store.crash_delete(domain)
@@ -54,9 +57,15 @@ def _manage_backup_limit(domain: str, store: FileStore):
         if round_no == 3:
             print("⚠️ 已达 3 轮，上限 5 轮")
         if round_no == 4:
-            ans = input("最终确认? (a=保留最后3个放弃备份/b=保留最后2个且备份/c=备份覆盖最旧): ")
+            try:
+                ans = input("最终确认? (a=保留最后3个放弃备份/b=保留最后2个且备份/c=备份覆盖最旧): ")
+            except EOFError:
+                break  # 非交互环境：退出备份管理
         else:
-            ans = input("处理建议：[删除 N] [保留最后3个放弃备份] [保留最后2个且备份] [放弃备份]: ")
+            try:
+                ans = input("处理建议：[删除 N] [保留最后3个放弃备份] [保留最后2个且备份] [放弃备份]: ")
+            except EOFError:
+                break  # 非交互环境：退出备份管理
         if "放弃备份" in ans or "保留3" in ans or (round_no == 4 and ans.lower() == "a"):
             path = store.backup_paths(domain)
             for p in path[:-3]:
