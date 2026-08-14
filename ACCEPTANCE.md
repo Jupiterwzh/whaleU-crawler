@@ -38,9 +38,35 @@ node src/collectors/collector.js --site https://cs.nju.edu.cn/ --days 365 --max-
 
 ## 测试 3：RAG 管理 Agent 分析有效期并入库（去重）
 
+**注意**：rag-manager 只处理**已入库**的待判定文档（pending_validity）。需先 ingest 爬虫产物，再跑 rag-manager。两种方式：
+
+**方式 A：通过 query-agent 分发链（自动 ingest + 触发 rag-manager）**
 ```bash
-cd rag-manager
-python rag_manager.py
+cd query-agent
+python query.py "cs.nju.edu.cn 最近有什么通知"
+# run_crawler 自动 ingest 爬虫产物 + 触发 rag-manager 判有效期去重
+```
+
+**方式 B：手动 ingest + rag-manager**
+```bash
+cd query-agent && python -c "
+import sys, json; sys.path.insert(0, '..')
+from shared.rag.ragstore import RAGStore
+from pathlib import Path
+store = RAGStore('../data/rag')
+records = []
+for f in sorted(Path('../crawler/data').glob('notices_*.jsonl'), key=lambda p: p.stat().st_mtime):
+    for line in f.read_text(encoding='utf-8', errors='replace').splitlines():
+        if not line.strip(): continue
+        try: raw = json.loads(line)
+        except: continue
+        url = raw.get('url',''); title = raw.get('title','')
+        records.append({'title': title, 'content': raw.get('content') or f'{title} {url}', 'url': url,
+            'domain': raw.get('domain') or (url.split('/')[2] if '://' in url else 'cs.nju.edu.cn'),
+            'date': (raw.get('publishTime') or raw.get('date') or '')[:10]})
+print('ingest 新增:', store.ingest(records))
+"
+cd ../rag-manager && python rag_manager.py
 ```
 
 **预期**：读取爬虫产出 → 判定 valid_from/until → 写回 → 重建 current 索引；同 dedup_hash 重复丢弃。
