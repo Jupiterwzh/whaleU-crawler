@@ -117,6 +117,26 @@ def make_rag_tools(rag_store, crawler_script: str, strategies_dir: str = "") -> 
             return f"策略草稿存在（未确认）：{draft}"
         return f"策略不存在：{domain} 尚无策略文件"
 
+    def list_sites() -> str:
+        """列出已知站点候选（从策略目录 meta 构建）：siteName + domain，供对照用户提到的机构。"""
+        if not strategies_dir:
+            return "策略目录未配置，无法列出候选站点"
+        sdir = Path(strategies_dir)
+        lines = ["已知站点候选："]
+        for p in sorted(sdir.glob("*.json")):
+            if p.name.endswith(".draft.json"):
+                continue
+            try:
+                meta = json.loads(p.read_text(encoding="utf-8")).get("meta", {})
+            except (json.JSONDecodeError, OSError):
+                continue
+            name = meta.get("siteName", "")
+            domain = meta.get("domain", p.stem)
+            lines.append(f"  - {name} ({domain})")
+        if len(lines) == 1:
+            return "当前无已知站点候选（策略目录为空）"
+        return "\n".join(lines)
+
     def run_explorer(url: str, timeout: int = 300) -> str:
         """唤起 explorer-agent 生成/更新该站点的爬取策略（--explore-only）。"""
         import subprocess as sp
@@ -194,6 +214,17 @@ def make_rag_tools(rag_store, crawler_script: str, strategies_dir: str = "") -> 
                 "required": ["domain"],
             },
             handler=check_strategy,
+            require_approval=False,
+        ),
+        Tool(
+            name="list_sites",
+            description="列出已知站点候选（siteName + domain），用于把用户提到的机构/学院对照到具体站点。",
+            parameters={
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+            handler=list_sites,
             require_approval=False,
         ),
         Tool(

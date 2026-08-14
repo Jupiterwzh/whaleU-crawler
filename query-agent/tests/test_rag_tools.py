@@ -1,3 +1,4 @@
+import json
 from unittest.mock import MagicMock
 
 from shared.rag.ragstore import RAGStore
@@ -105,3 +106,20 @@ def test_run_explorer_spawns_and_reports(tmp_path, monkeypatch):
     assert "software.nju.edu.cn" in out
     assert "策略" in out
     assert "--explore-only" in " ".join(captured["cmd"][0])
+
+
+def test_list_sites_builds_candidates(tmp_path, monkeypatch):
+    """L4: list_sites 从策略目录 meta 构建站点候选清单（siteName + domain）。"""
+    from src.tools.rag_tools import make_rag_tools
+    strat_dir = tmp_path / "strategies"
+    strat_dir.mkdir()
+    (strat_dir / "cs.nju.edu.cn.json").write_text(
+        json.dumps({"meta": {"domain": "cs.nju.edu.cn", "siteName": "计算机学院"}}), encoding="utf-8")
+    (strat_dir / "software.nju.edu.cn.json").write_text(
+        json.dumps({"meta": {"domain": "software.nju.edu.cn", "siteName": "软件学院"}}), encoding="utf-8")
+    store = MagicMock()
+    tools = make_rag_tools(store, "node", strategies_dir=str(strat_dir))
+    tool = [t for t in tools if t.name == "list_sites"][0]
+    out = tool.handler()
+    assert "cs.nju.edu.cn" in out and "计算机学院" in out
+    assert "software.nju.edu.cn" in out and "软件学院" in out

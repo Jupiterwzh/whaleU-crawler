@@ -32,9 +32,10 @@
 | 项 | 内容 |
 |----|------|
 | 输入 | CLI 参数问题文本（`python query.py "问题"`） |
-| 行为 | 复用 harness 主循环；装配工具 `rag_search`/`run_crawler`/`check_strategy`/`run_explorer`/`read_file`；按显式分发链编排：`rag_search` → 不足则 `check_strategy` 查策略 → 无策略则 `run_explorer` 唤起策略 Agent → 有策略则 `run_crawler` 抓取入库 → 再 `rag_search` → 回答 |
+| 行为 | 复用 harness 主循环；装配工具 `rag_search`/`run_crawler`/`check_strategy`/`run_explorer`/`list_sites`/`read_file`；按显式分发链编排：`rag_search` → 不足则 `list_sites` 对照候选站点（从策略 meta 构建 siteName+domain）→ 展示目标 URL 并请求用户确认（用户可指正对照）→ `check_strategy` 查策略 → 无策略则 `run_explorer` 唤起策略 Agent → 有策略则 `run_crawler` 抓取入库 → 再 `rag_search` → 回答 |
+| 站点对照 | `list_sites` 从 `crawler/data/strategies/*.json` 的 meta 构建候选清单；Agent 把用户提到的机构/学院匹配到域名；目标 URL 在工具调用前展示（`agent_loop` 打印动作 + `run_crawler` require_approval 执行前批准），用户可拒绝并要求修改对照 |
 | 输出 | 自然语言答案（含来源 URL） |
-| 边界 | 无法从 RAG 也未能爬取到 → 明确告知"未找到相关信息"；策略 Agent 未生成策略 → 提示用户"可继续用已有 RAG 或手动生成策略" |
+| 边界 | 无法从 RAG 也未能爬取到 → 明确告知"未找到相关信息"；策略 Agent 未生成策略 → 提示用户"可继续用已有 RAG 或手动生成策略"；候选站点不在列表 → 询问用户确切域名，不猜测 |
 | 错误处理 | 爬虫失败 → 回退到已有 RAG 结果；策略 Agent 唤起失败 → 报告原因；LLM 调用失败 → 重试后报错 |
 
 ### 3.2 RAGStore（知识库）
