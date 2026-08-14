@@ -67,7 +67,7 @@ def preflight(domain: str, store: FileStore, auto_confirm: bool = False) -> Pref
     goal_context = ""
     if store.strategy_exists(domain):
         print(f"域名 {domain} 已有策略。")
-        if not (auto_confirm or _confirm("是否仍要爬取？（y/n）: ", False, wrongs)):
+        if not (auto_confirm or _confirm("是否仍要爬取？（y/n）: ", True, wrongs)):
             print(f"已取消。如需重新爬取 {domain}，请重新运行。")
             return PreflightResult(should_exit=True)
         if auto_confirm or _confirm("是否参考已有策略加以改进？（y/n）: ", True, wrongs):
