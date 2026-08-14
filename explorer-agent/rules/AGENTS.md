@@ -60,7 +60,8 @@
 
 ## 验证
 
-- **生成草稿后必须验证**：用 `run_shell` 执行 `node <CRAWLER_SCRIPT> --verify <草稿路径>`（`<domain>.draft.json`）实测每个入口是否真能爬到通知。据验证报告修正：
+- **被上层 Agent 调用（非交互，`--explore-only` 由 query-agent run_explorer / crawler 委托）时：生成草稿即完成，跳过 verify**——草稿写入 `<domain>.draft.json` 后直接结束，不必执行 `--verify`（否则探索+验证累积耗时，触发 run_explorer 300s 超时）。草稿的实际有效性由后续 run_crawler 爬取时验证（collector 会确认草稿并实测每入口，无效入口在爬取时暴露）。
+- **交互式（宿主机直接 `python main.py`）时，仍可 verify**：用 `run_shell` 执行 `node <CRAWLER_SCRIPT> --verify <草稿路径>` 实测每个入口，据验证报告修正：
   - 非列表页（notices=0 或"非列表页"）→ 从 entries 剔除，或换用该页实际可爬的入口
   - 抓取失败 → 标注原因，评估是否保留
   - 验证通过 → 保留

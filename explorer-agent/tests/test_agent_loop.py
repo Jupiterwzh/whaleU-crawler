@@ -291,3 +291,23 @@ def test_tool_result_truncated_in_context(tmp_path, monkeypatch):
     content = tool_msgs[0]["content"]
     assert len(content) <= _TOOL_RESULT_LIMIT + 100, f"工具结果应截断，实际 {len(content)}"
     assert "已截断" in content
+
+
+def test_explore_only_ends_after_draft(tmp_path, monkeypatch):
+    """--explore-only 模式：write_file 写 draft 后立即结束，不再继续（防超时）。"""
+    import os
+    monkeypatch.chdir(Path(__file__).parent.parent)
+    from src.agent_loop import AgentLoop
+    from src.harness import Harness
+    h = Harness.from_yaml("agent.yaml")
+    llm = MagicMock()
+    llm.chat.side_effect = [
+        {"text": "写草稿", "tool_calls": [{"name": "write_file", "arguments": {"path": "/x/software.nju.edu.cn.draft.json", "content": "{}"}, "id": "1"}]},
+        {"text": "不该到这", "tool_calls": None},
+    ]
+    h.tools.get("write_file").handler = MagicMock(return_value="已写入")
+    monkeypatch.setattr("builtins.input", lambda prompt="": "y")
+    loop = AgentLoop(h, llm, explore_only=True)
+    result = loop.run("探索")
+    assert "提前结束" in result
+    assert llm.chat.call_count == 1, "写草稿后不应再调 LLM"

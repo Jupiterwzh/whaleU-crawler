@@ -164,11 +164,12 @@ def _save_snapshot(H, text, round_num):
 
 
 class AgentLoop:
-    def __init__(self, harness, llm: LLMClient, experience_path=None, strategy_path=None):
+    def __init__(self, harness, llm: LLMClient, experience_path=None, strategy_path=None, explore_only=False):
         self.H = harness
         self.llm = llm
         self.experience_path = experience_path
         self.strategy_path = strategy_path
+        self.explore_only = explore_only
         self._list_candidates: list[dict] = []
         self._structure_nodes: list[dict] = []
         self._structure_truncated = False
@@ -338,6 +339,13 @@ class AgentLoop:
                                 self._structure_truncated = bool(_data.get("truncated"))
                         except json.JSONDecodeError:
                             pass
+                    # 非交互（--explore-only，被上层 Agent 调用）：草稿写入后立即结束，跳过 verify（防超时）
+                    if self.explore_only and tc["name"] == "write_file":
+                        _path = str(tc["arguments"].get("path", ""))
+                        if _path.endswith(".draft.json"):
+                            print("\n[explore-only] 草稿已写入，提前结束（verify 由后续 run_crawler 实测验证）")
+                            H.tracer.flush()
+                            return "草稿已生成（explore-only 提前结束）"
                     # 工具结果进 context 前截断，防 context 膨胀（LLM 每步变慢 → 探索超时）
                     _tool_result = result if len(result) <= _TOOL_RESULT_LIMIT else (
                         result[:_TOOL_RESULT_LIMIT] + f"\n...（工具结果过长，已截断 {len(result)} → {_TOOL_RESULT_LIMIT} 字符，详见轨迹）")

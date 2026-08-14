@@ -90,7 +90,7 @@ def main():
     old_data = store.strategy_read(domain)  # 快照旧策略（Agent 写入后会覆盖）
     harness = Harness.from_yaml("agent.yaml")
     llm = LLMClient()
-    loop = AgentLoop(harness, llm, strategy_path=f"{strategies_dir}/{domain}.json")
+    loop = AgentLoop(harness, llm, strategy_path=f"{strategies_dir}/{domain}.json", explore_only=explore_only)
     loop.run(goal)
 
     # ---- 后导 ----
