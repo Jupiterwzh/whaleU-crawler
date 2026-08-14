@@ -5,15 +5,22 @@ from .filestore import FileStore
 
 
 def postflight(domain: str, store: FileStore, old_data: dict | None = None):
-    new_data = store.strategy_read(domain)
+    # 优先读草稿（Agent 写草稿，确认后转正）；无草稿则读正式策略
+    new_data = store.strategy_draft_read(domain)
+    if new_data is None:
+        new_data = store.strategy_read(domain)
     if new_data is None:
         print("未发现新生成策略，后导跳过")
         return
 
     store.crash_write(domain, new_data)
 
+    # 从草稿读的 → 标记转正（草稿最终会被清理）
+    from_draft = store.strategy_draft_exists(domain)
+
     if old_data is None:
         store.crash_delete(domain)
+        store.strategy_draft_delete(domain)
         print(f"策略已保存: {store.strategy_path(domain)}")
         return
 
@@ -21,6 +28,7 @@ def postflight(domain: str, store: FileStore, old_data: dict | None = None):
     if "删除" in ans:
         store.strategy_write(domain, new_data)
         store.crash_delete(domain)
+        store.strategy_draft_delete(domain)
         print("已删除旧策略，新策略已保存")
     else:
         if store.backup_count(domain) >= 3:
@@ -29,10 +37,12 @@ def postflight(domain: str, store: FileStore, old_data: dict | None = None):
             store.backup_write(domain, old_data)
             store.strategy_write(domain, new_data)
             store.crash_delete(domain)
+            store.strategy_draft_delete(domain)
             print("旧策略已备份，新策略已保存")
         else:
             store.strategy_write(domain, new_data)
             store.crash_delete(domain)
+            store.strategy_draft_delete(domain)
             print("达到备份上限，旧策略未备份，新策略已保存")
 
 

@@ -191,3 +191,24 @@ def test_confirm_preview_includes_all_candidates(tmp_path, monkeypatch):
     assert "1702/list.htm" in preview
     assert "1650/list.htm" in preview
     assert "1703/list.htm" in preview
+
+
+def test_build_marked_tree():
+    """程序生成带标记的完整结构树：所有节点 + ✅选中/⚠️未选/❌功能页/详情/外链 标记。"""
+    from src.agent_loop import _build_marked_tree
+    nodes = [
+        {"index": 1, "url": "https://cs.nju.edu.cn/", "title": "首页", "type": "home", "depth": 0},
+        {"index": 2, "url": "https://cs.nju.edu.cn/1650/list.htm", "title": "学院简介", "type": "list", "depth": 1},
+        {"index": 3, "url": "https://cs.nju.edu.cn/1702/list.htm", "title": "院内公告", "type": "list", "depth": 1},
+        {"index": 4, "url": "https://cs.nju.edu.cn/intro.htm", "title": "概览", "type": "info", "depth": 1},
+        {"index": 5, "url": "https://cs.nju.edu.cn/1702a/page.htm", "title": "具体通知", "type": "detail", "depth": 2},
+    ]
+    selected = {"https://cs.nju.edu.cn/1702/list.htm"}  # 院内公告被选中
+    tree = _build_marked_tree(nodes, selected)
+    # 所有节点都在（全站点合并）
+    assert "学院简介" in tree and "院内公告" in tree and "具体通知" in tree and "概览" in tree
+    # 标记正确
+    assert "✅选中" in tree and "1702/list.htm" in tree.split("✅选中")[1]
+    assert "⚠️未选" in tree and "1650/list.htm" in tree.split("⚠️未选")[1]
+    assert "❌info" in tree or "❌信息" in tree
+    assert "❌详情" in tree

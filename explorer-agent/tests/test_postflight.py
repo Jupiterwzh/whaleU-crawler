@@ -37,3 +37,27 @@ def test_existing_strategy_backup_old(tmp_path, monkeypatch):
     assert store.backup_count("cs.nju.edu.cn") == 1
     assert store.backup_read("cs.nju.edu.cn", 1)["entries"][0]["name"] == "old"
     assert not store.crash_exists("cs.nju.edu.cn")
+
+def test_postflight_promotes_draft(tmp_path, monkeypatch):
+    """Agent 写草稿 → postflight 从草稿转正为正式策略。"""
+    from src.postflight import postflight
+    store = FileStore(str(tmp_path))
+    # 旧正式策略
+    store.strategy_write("cs.nju.edu.cn", {"meta": {"version": "old"}, "entries": []})
+    # 新草稿
+    store.strategy_draft_write("cs.nju.edu.cn", {"meta": {"version": "new"}, "entries": [{"name": "院内公告"}]})
+    # 无旧数据（首次）时直接转正
+    monkeypatch.setattr("builtins.input", lambda prompt="": "备份")
+    postflight("cs.nju.edu.cn", store, old_data={"meta": {"version": "old"}, "entries": []})
+    # 正式策略来自草稿
+    assert store.strategy_read("cs.nju.edu.cn")["meta"]["version"] == "new"
+    # 草稿已清
+    assert not store.strategy_draft_path("cs.nju.edu.cn").exists()
+
+
+def test_postflight_no_draft_skips(tmp_path, monkeypatch):
+    """无草稿无正式策略 → 后导跳过。"""
+    from src.postflight import postflight
+    store = FileStore(str(tmp_path))
+    postflight("cs.nju.edu.cn", store)
+    assert not store.strategy_path("cs.nju.edu.cn").exists()

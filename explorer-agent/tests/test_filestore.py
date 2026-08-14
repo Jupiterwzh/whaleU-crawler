@@ -74,3 +74,31 @@ def test_crash_write_read_delete(tmp_path):
     assert store.crash_read("cs.nju.edu.cn")["data"] == "crash"
     store.crash_delete("cs.nju.edu.cn")
     assert not store.crash_exists("cs.nju.edu.cn")
+
+
+def test_strategy_draft_write_promote(tmp_path):
+    """草稿写入（不碰正式策略），转正后成为正式策略。"""
+    store = FileStore(str(tmp_path))
+    # 写正式策略（旧版）
+    store.strategy_write("cs.nju.edu.cn", {"meta": {"version": "old"}, "entries": []})
+    # 写草稿
+    draft_data = {"meta": {"version": "new"}, "entries": [{"name": "院内公告"}]}
+    store.strategy_draft_write("cs.nju.edu.cn", draft_data)
+    # 正式策略未变
+    assert store.strategy_read("cs.nju.edu.cn")["meta"]["version"] == "old"
+    # 草稿存在
+    assert store.strategy_draft_path("cs.nju.edu.cn").exists()
+    # 转正：草稿覆盖正式策略
+    store.strategy_draft_promote("cs.nju.edu.cn")
+    assert store.strategy_read("cs.nju.edu.cn")["meta"]["version"] == "new"
+    # 转正后删除草稿
+    assert not store.strategy_draft_path("cs.nju.edu.cn").exists()
+
+
+def test_strategy_draft_read_and_delete(tmp_path):
+    """草稿读取与删除。"""
+    store = FileStore(str(tmp_path))
+    store.strategy_draft_write("cs.nju.edu.cn", {"meta": {"version": "draft"}, "entries": []})
+    assert store.strategy_draft_read("cs.nju.edu.cn")["meta"]["version"] == "draft"
+    store.strategy_draft_delete("cs.nju.edu.cn")
+    assert not store.strategy_draft_path("cs.nju.edu.cn").exists()

@@ -42,6 +42,40 @@ class FileStore:
         if p.exists():
             p.unlink()
 
+    # ---- 草稿策略（确认后转正）----
+    def strategy_draft_path(self, domain: str) -> Path:
+        return self._strategies / f"{domain}.draft.json"
+
+    def strategy_draft_exists(self, domain: str) -> bool:
+        return self.strategy_draft_path(domain).exists()
+
+    def strategy_draft_write(self, domain: str, data: dict) -> Path:
+        p = self.strategy_draft_path(domain)
+        tmp = p.with_suffix(".tmp")
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        tmp.replace(p)
+        return p
+
+    def strategy_draft_read(self, domain: str) -> dict | None:
+        p = self.strategy_draft_path(domain)
+        if not p.exists():
+            return None
+        with open(p, encoding="utf-8") as f:
+            return json.load(f)
+
+    def strategy_draft_promote(self, domain: str):
+        """草稿转正：覆盖正式策略后删除草稿。"""
+        draft = self.strategy_draft_read(domain)
+        if draft is not None:
+            self.strategy_write(domain, draft)
+        self.strategy_draft_delete(domain)
+
+    def strategy_draft_delete(self, domain: str):
+        p = self.strategy_draft_path(domain)
+        if p.exists():
+            p.unlink()
+
     # ---- 备份 (每域名 ≤3) ----
     def _backup_path(self, domain: str, index: int) -> Path:
         return self._backups / f"{domain}.bak{index}.json"

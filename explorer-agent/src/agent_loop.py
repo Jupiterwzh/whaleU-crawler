@@ -2,6 +2,7 @@
 """Agent 核心循环。LLM 只占一行决策，其余全是工程。"""
 import json
 from datetime import datetime
+from pathlib import Path
 
 from .llm.client import LLMClient
 
@@ -31,6 +32,48 @@ def _format_list_candidates(cands: list[dict]) -> str:
     for n in cands:
         title = n.get("title") or "(无标题)"
         lines.append(f"  [{n.get('index', '?'):>2}] {title[:20]:<22} {n.get('url', '')}")
+    return "\n".join(lines)
+
+
+def _build_marked_tree(nodes: list[dict], selected_urls: set[str]) -> str:
+    """程序生成带标记的完整结构树：所有节点 + 类型/选中标记。
+
+    标记规则：
+    - url ∈ selected_urls → ✅选中（爬取入口）
+    - type=list 且未选 → ⚠️未选
+    - type=info → ❌信息栏目（展开子栏目，不爬）
+    - type=detail → ❌详情页
+    - type=other → ❌功能页
+    - type=home → 首页
+    - type=error → ❌抓取失败
+    按 depth 缩进近似树形。
+    """
+    if not nodes:
+        return "（无节点）"
+    lines = []
+    for n in nodes:
+        depth = n.get("depth", 0)
+        indent = "│   " * max(depth - 1, 0) + ("├── " if depth > 0 else "")
+        title = n.get("title") or "(无标题)"
+        url = n.get("url", "")
+        ntype = n.get("type", "")
+        if url in selected_urls:
+            mark = "✅选中"
+        elif ntype == "list":
+            mark = "⚠️未选"
+        elif ntype == "info":
+            mark = "❌信息栏目"
+        elif ntype == "detail":
+            mark = "❌详情页"
+        elif ntype == "other":
+            mark = "❌功能页"
+        elif ntype == "home":
+            mark = "首页"
+        elif ntype == "error":
+            mark = "❌抓取失败"
+        else:
+            mark = ntype
+        lines.append(f"{indent}[{mark}] {title} ({url})")
     return "\n".join(lines)
 
 
@@ -89,20 +132,42 @@ def _save_snapshot(H, text, round_num):
 
 
 class AgentLoop:
-    def __init__(self, harness, llm: LLMClient, experience_path=None):
+    def __init__(self, harness, llm: LLMClient, experience_path=None, strategy_path=None):
         self.H = harness
         self.llm = llm
         self.experience_path = experience_path
+        self.strategy_path = strategy_path
         self._list_candidates: list[dict] = []
+        self._structure_nodes: list[dict] = []
+
+    def _load_selected_urls(self) -> set[str]:
+        """从策略草稿（优先）或正式策略读 entries URL 作为选中集合。"""
+        if not self.strategy_path:
+            return set()
+        p = Path(self.strategy_path)
+        # 草稿优先：<domain>.json → <domain>.draft.json
+        draft_p = p.with_name(p.stem + ".draft.json")
+        candidates = [draft_p, p] if draft_p.exists() else [p]
+        for cand in candidates:
+            if not cand.exists():
+                continue
+            try:
+                data = json.loads(cand.read_text(encoding="utf-8"))
+            except (json.JSONDecodeError, OSError):
+                continue
+            urls = {e.get("url", "") for e in data.get("entries", []) if isinstance(e, dict)}
+            if urls:
+                return urls
+        return set()
 
     def _confirm_preview(self, text: str) -> str:
-        """确认预览：完整 list 候选清单 + Agent 结构树。"""
-        parts = []
-        cands = _format_list_candidates(self._list_candidates)
-        if cands:
-            parts.append(cands)
-        parts.append(_preview(text))
-        return "\n\n".join(parts)
+        """确认预览：程序生成带标记的完整结构树（全站点合并）。"""
+        if self._structure_nodes:
+            selected = self._load_selected_urls()
+            tree = _build_marked_tree(self._structure_nodes, selected)
+            return f"=== 完整网站结构（程序生成，含选中标记）===\n{tree}"
+        # 兜底：无结构节点时用 Agent 输出预览
+        return _preview(text)
 
     def run(self, goal: str) -> str:
         H = self.H
@@ -230,6 +295,12 @@ class AgentLoop:
                         cands = _extract_list_candidates(result)
                         if cands:
                             self._list_candidates = cands
+                        try:
+                            _data = json.loads(result)
+                            if isinstance(_data, dict) and isinstance(_data.get("nodes"), list):
+                                self._structure_nodes = _data["nodes"]
+                        except json.JSONDecodeError:
+                            pass
                     context.append({"role": "tool", "tool_call_id": tc["id"], "content": result})
                     H.tracer.record(tracer_step, "", action, result)
                     print(f"  结果: {result[:200]}")
