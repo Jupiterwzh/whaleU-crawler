@@ -84,6 +84,16 @@ class AgentLoop:
     def __init__(self, harness, llm: LLMClient):
         self.H = harness
         self.llm = llm
+        self._list_all_result: str | None = None  # 缓存的"站点全部通知"完整列表
+
+    def _finalize(self, text: str) -> str:
+        """最终答案兜底：'站点全部通知'列表直接以工具完整输出为准（含有效期），Agent 输出作前缀。"""
+        if not self._list_all_result:
+            return text
+        # 完整列表已含在 Agent 输出中则不重复
+        if self._list_all_result.strip() in text:
+            return text
+        return text + "\n\n【完整通知列表（有效期见各条）】\n" + self._list_all_result
 
     def run(self, goal: str) -> str:
         H = self.H
@@ -127,10 +137,10 @@ class AgentLoop:
                     print(f"\n=== 第 {round_idx + 1} 轮探索完成 ===\n")
 
                     if round_idx == max_adjustments:
-                        ans = _interactive_input(f"Agent 输出:\n{text[:500]}\n\n最终确认? (y=确认/暂存=保存退出/放弃=不保存退出): ")
+                        ans = _interactive_input(f"Agent 输出:\n{text[:8000]}\n\n最终确认? (y=确认/暂存=保存退出/放弃=不保存退出): ")
                         if ans.lower() == "y":
                             H.tracer.flush()
-                            return text
+                            return self._finalize(text)
                         if "暂存" in ans:
                             p = _save_snapshot(H, text, round_idx + 1)
                             print(f"已暂存至 {p}")
@@ -144,10 +154,10 @@ class AgentLoop:
                     if remaining > 0:
                         print(f"（还可调整 {remaining} 次）")
                     print("（输入 暂存=保存当前结果并退出，exit=直接退出）")
-                    ans = _interactive_input(f"Agent 输出:\n{text[:500]}\n\n确认? (y/调整建议): ")
+                    ans = _interactive_input(f"Agent 输出:\n{text[:8000]}\n\n确认? (y/调整建议): ")
                     if ans.lower() == "y":
                         H.tracer.flush()
-                        return text
+                        return self._finalize(text)
                     if ans.lower() in ("暂存", "save"):
                         p = _save_snapshot(H, text, round_idx + 1)
                         print(f"已暂存至 {p}")
@@ -205,6 +215,9 @@ class AgentLoop:
                         result = H.tools.call(tc["name"], tc["arguments"])
                     except Exception as e:
                         result = f"工具失败: {e}"
+                    # 缓存"站点全部通知"完整列表（供最终回答兜底，防 Agent 精简）
+                    if tc["name"] == "rag_search" and "共收录" in result:
+                        self._list_all_result = result
                     context.append({"role": "tool", "tool_call_id": tc["id"], "content": result})
                     H.tracer.record(tracer_step, "", action, result)
                     print(f"  结果: {result[:200]}")
