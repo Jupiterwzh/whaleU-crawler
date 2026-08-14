@@ -234,6 +234,22 @@ docker run --rm \
 - **需登录站点**：SSO 站点（如 ndwy）需浏览器模式（`--browser`）扫码登录后爬取，纯 HTTP 无法访问。
 - **JS 动态渲染**：正文由 JS 动态加载的页面，HTTP 爬取可能只得到骨架文本；此类站点建议浏览器模式。
 
+## 维护工具
+
+### 清理运行产物（可选）
+
+Agent 运行会积累轨迹文件（`traces/`）、策略备份、暂存文件，可选择性清理节省磁盘。**只清理运行产物，绝不碰 RAG（`data/rag/`）与策略（`crawler/data/strategies/`）**。
+
+```bash
+python tools/clean_runtime.py --all          # 交互式逐项确认清理
+python tools/clean_runtime.py --all --yes    # 不交互直接清理
+python tools/clean_runtime.py --traces       # 只清理轨迹（保留最近 10 个）
+python tools/clean_runtime.py --backups      # 只清理策略备份（保留最近 3 个）
+python tools/clean_runtime.py --checkpoints  # 清理暂存/崩溃文件
+```
+
+> 轨迹文件是可观测性证据（作业要求"轨迹文件记录每步决策"），建议保留最近若干条而非全删。
+
 ## 依赖
 
 - **Node.js 18+**（爬虫）
