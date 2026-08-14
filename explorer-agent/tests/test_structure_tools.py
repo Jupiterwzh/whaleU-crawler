@@ -87,7 +87,7 @@ def test_crawl_structure_external_stops():
 
 
 def test_tool_handler_returns_json_string():
-    """crawl_structure 工具 handler 返回 JSON 字符串（Agent 友好）。"""
+    """crawl_structure 工具 handler 返回 JSON 字符串，节点含 selected 标记，不弹窗。"""
     import json as _json
     from src.tools.structure_tools import make_structure_tools
     tools = make_structure_tools()
@@ -98,6 +98,9 @@ def test_tool_handler_returns_json_string():
     assert isinstance(out, str)
     parsed = _json.loads(out)
     assert parsed["domain"] == "cs.nju.edu.cn"
+    # 每个节点都带 selected 标记（默认 False，由 LLM 自主判断后标记）
+    for n in parsed["nodes"]:
+        assert "selected" in n and n["selected"] is False
 
 
 def test_classify_url_list_suffix():
@@ -128,18 +131,20 @@ def test_nodes_have_title_and_index():
     assert any(n["title"] == "院内公告" for n in tree["nodes"])
 
 
-def test_user_selection_adds_entries(monkeypatch):
-    """用户输入编号 → 选为入口加入策略。"""
-    from src.tools.structure_tools import _prompt_user_selection
-    nodes = [
-        {"index": 1, "url": "https://cs.nju.edu.cn/", "type": "middle", "depth": 0},
-        {"index": 2, "url": "https://cs.nju.edu.cn/1702/list.htm", "type": "list", "depth": 1},
-        {"index": 3, "url": "https://cs.nju.edu.cn/intro.htm", "type": "detail", "depth": 1},
-    ]
-    monkeypatch.setattr("builtins.input", lambda prompt="": "2")
-    selected = _prompt_user_selection(nodes)
-    assert len(selected) == 1
-    assert selected[0]["url"] == "https://cs.nju.edu.cn/1702/list.htm"
+def test_tool_handler_no_prompt(monkeypatch):
+    """crawl_structure handler 不再弹窗选入口（LLM 自主判断）。"""
+    import json as _json
+    from src.tools.structure_tools import make_structure_tools
+    tools = make_structure_tools()
+    tool = [t for t in tools if t.name == "crawl_structure"][0]
+    called = {"input": False}
+    monkeypatch.setattr("builtins.input", lambda prompt="": called.__setitem__("input", True))
+    with patch("httpx.get", side_effect=lambda url, **kw: type("R", (), {
+        "text": HOME_HTML, "raise_for_status": lambda: None})()):
+        out = tool.handler(url="https://cs.nju.edu.cn/")
+    assert called["input"] is False, "handler 不应调用 input（LLM 自主选入口）"
+    parsed = _json.loads(out)
+    assert isinstance(parsed, dict) and "nodes" in parsed
 
 
 def test_user_selection_empty_input(monkeypatch):

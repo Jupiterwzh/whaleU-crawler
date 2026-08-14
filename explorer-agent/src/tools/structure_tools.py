@@ -176,7 +176,7 @@ def crawl_structure(root_url: str, max_depth: int = 4, max_links: int = 30) -> d
             html = resp.text
         except Exception as e:
             nodes.append({"index": len(nodes) + 1, "url": url, "title": anchor,
-                          "type": "error", "depth": depth, "error": str(e)[:80]})
+                          "type": "error", "depth": depth, "error": str(e)[:80], "selected": False})
             continue
 
         page_type = _classify_page(html, url)
@@ -186,13 +186,13 @@ def crawl_structure(root_url: str, max_depth: int = 4, max_links: int = 30) -> d
             preview_count = _count_notice_links(html)
             nodes.append({"index": len(nodes) + 1, "url": url, "title": anchor,
                           "type": page_type, "depth": depth,
-                          "preview_count": preview_count})
+                          "preview_count": preview_count, "selected": False})
         else:
             # 锚文本含信息栏目关键词且非列表页 → 标记 info（不深挖）
             if page_type != "list" and _is_info_page(anchor, url, info_kws):
                 page_type = "info"
             node = {"index": len(nodes) + 1, "url": url, "title": anchor,
-                    "type": page_type, "depth": depth}
+                    "type": page_type, "depth": depth, "selected": False}
             # 列表页加 category（notice/info 仅参考）
             if page_type == "list":
                 node["category"] = _categorize_list(anchor, url, info_kws, notice_kws)
@@ -247,17 +247,17 @@ def make_structure_tools() -> list[Tool]:
     def handler(url, max_depth=4, max_links=30):
         import json as _json
         tree = crawl_structure(url, max_depth, max_links)
-        selected = _prompt_user_selection(tree["nodes"])
-        tree["selected"] = selected
+        # 不弹窗：返回完整结构树（含 selected 标记），由 LLM 自主判断哪些 list 是通知入口
         return _json.dumps(tree, ensure_ascii=False, indent=2)
 
     return [
         Tool(
             name="crawl_structure",
             description=(
-                "BFS 遍历指定站点，返回网站结构树（JSON，节点含 URL/type/depth）。"
-                "type 取值：list=通知列表页✅ / middle=中间页 / detail=详情页 / other=功能页 / error=抓取失败。"
-                "自动防循环、外链停止。用于理解整站结构后选择要爬取的列表页入口。"
+                "BFS 遍历指定站点，返回完整网站结构树（JSON，节点含 URL/type/depth/selected）。"
+                "type 取值：list=通知列表页✅ / middle=中间页 / detail=详情页 / info=信息页 / other=功能页 / error=抓取失败。"
+                "自动防循环、外链停止。返回后由你（Agent）自主判断哪些 list 节点是通知公告入口，"
+                "在生成策略时写入 entries；同时用结构树+标记的形式展示给用户确认。"
             ),
             parameters={
                 "type": "object",

@@ -14,7 +14,9 @@ class LLMClient:
         api_key = os.environ.get("LLM_API_KEY") or get_key()
         if not api_key:
             api_key = ensure_key()  # 首启引导录入
-        self.model = os.environ.get("LLM_MODEL", "deepseek/deepseek-v4-flash(free)")
+        self.model = os.environ.get("LLM_MODEL", "")
+        if not self.model:
+            raise ValueError("未配置 LLM_MODEL（请在 .env 设置，如 deepseek-v4-flash）")
         self._client = OpenAI(base_url=base_url, api_key=api_key)
 
     def chat(self, messages, tools=None):

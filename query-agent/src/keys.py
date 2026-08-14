@@ -11,14 +11,14 @@ from pathlib import Path
 import keyring
 
 _SERVICE = "whalequery"
-_ACCOUNT = "cherryin_api_key"
+_ACCOUNT = "llm_api_key"
 _AGENT_ENV_PATH = Path(__file__).resolve().parent.parent / ".env"
 # 根 .env 为集中配置主源；keys CLI 统一写根，各 Agent 继承
 _ROOT_ENV_PATH = Path(__file__).resolve().parent.parent.parent / ".env"
 
 
 def _env_key() -> str:
-    """从 .env 文件读取 LLM_API_KEY（不做 ${} 展开，取字面值）。"""
+    """从 .env 文件读取 LLM_API_KEY；值若是 ${VAR} 引用则从环境变量展开。"""
     for env_path in (_AGENT_ENV_PATH, _ROOT_ENV_PATH):
         if not env_path.exists():
             continue
@@ -27,8 +27,14 @@ def _env_key() -> str:
                 line = line.strip()
                 if line.startswith("LLM_API_KEY="):
                     val = line.split("=", 1)[1].strip().strip('"').strip("'")
-                    if val:
-                        return val
+                    if not val:
+                        continue
+                    # ${VAR} 引用 → 从环境变量展开
+                    import re as _re
+                    m = _re.fullmatch(r"\$\{(\w+)\}", val)
+                    if m:
+                        return os.environ.get(m.group(1), "")
+                    return val
         except OSError:
             continue
     return ""
@@ -45,8 +51,8 @@ def _env_write_key(key: str):
 
 
 def get_key() -> str:
-    """返回 key。优先 env，其次 keyring，再次 .env。无则空。"""
-    key = os.environ.get("LLM_API_KEY", "")
+    """返回 key。优先 LLM_API_KEY env，其次 DEEPSEEK_API_KEY env，再次 keyring，最后 .env。无则空。"""
+    key = os.environ.get("LLM_API_KEY", "") or os.environ.get("DEEPSEEK_API_KEY", "")
     if key:
         return key
     try:
@@ -83,7 +89,7 @@ def has_key() -> bool:
 
 def prompt_and_store() -> str:
     """引导用户隐藏录入 key 并存入 keyring/.env。返回 key 值。"""
-    key = getpass.getpass("🔑 请输入 DeepSeek API Key（输入不回显）: ").strip()
+    key = getpass.getpass("🔑 请输入 LLM API Key（输入不回显）: ").strip()
     if not key:
         print("未输入，退出。")
         sys.exit(1)
