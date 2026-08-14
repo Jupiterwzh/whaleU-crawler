@@ -185,3 +185,27 @@ def test_rag_search_list_all_by_domain(tmp_path):
     # 列出 cs 全部（3 条，含不匹配'通知'关键词的'讲座'）
     assert "通知一" in out and "通知二" in out and "讲座" in out
     assert "命中 3" in out or "3 条" in out
+
+
+def test_list_sites_recommend_mode(tmp_path, monkeypatch):
+    """list_sites(query=机构名) 推荐相关候选（不全列）；all=true 全列。"""
+    import src.tools.rag_tools as rt
+    from src.tools.rag_tools import make_rag_tools
+    sites_file = tmp_path / "sites.json"
+    sites_file.write_text(json.dumps([
+        {"name": "医学院", "domain": "med.nju.edu.cn", "category": "院系", "source": "x"},
+        {"name": "生物医学工程学院", "domain": "bme.nju.edu.cn", "category": "院系", "source": "x"},
+        {"name": "计算机学院", "domain": "cs.nju.edu.cn", "category": "院系", "source": "x"},
+        {"name": "软件学院", "domain": "software.nju.edu.cn", "category": "院系", "source": "x"},
+    ]), encoding="utf-8")
+    monkeypatch.setattr(rt, "_SITES_JSON", sites_file)
+    store = MagicMock()
+    tools = make_rag_tools(store, "node", strategies_dir=str(tmp_path))
+    tool = [t for t in tools if t.name == "list_sites"][0]
+    # 推荐模式：query="医学" → 只返回医学院 + 生物医学工程，不列计算机/软件
+    out = tool.handler(query="医学")
+    assert "医学院" in out and "生物医学工程" in out
+    assert "计算机学院" not in out and "软件学院" not in out
+    # all=true → 全列
+    out_all = tool.handler(all=True)
+    assert "计算机学院" in out_all and "软件学院" in out_all

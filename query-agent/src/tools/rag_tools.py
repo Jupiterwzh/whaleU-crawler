@@ -161,46 +161,63 @@ def make_rag_tools(rag_store, crawler_script: str, strategies_dir: str = "") -> 
             return f"策略草稿存在（未确认）：{draft}"
         return f"策略不存在：{domain} 尚无策略文件"
 
-    def list_sites() -> str:
-        """列出站点候选（siteName + domain），供对照用户提到的机构。
-
-        优先读取 crawler/data/sites.json（南京大学院系/官方网页清单，112 站点）；
-        无该文件时 fallback 到策略目录 meta。
-        """
+    def list_sites(query: str = "", all: bool = False) -> str:
+        """列出站点候选。默认按用户提到的机构名推荐最相关候选（不刷屏）；
+        传 all=True 或 query 为空时列出全部。"""
         if _SITES_JSON.exists():
             try:
                 sites = json.loads(_SITES_JSON.read_text(encoding="utf-8"))
-                lines = ["已知站点候选（sites.json）："]
+            except (json.JSONDecodeError, OSError):
+                sites = []
+        else:
+            sites = []
+        # fallback 策略 meta
+        if not sites and strategies_dir:
+            sdir = Path(strategies_dir)
+            for p in sorted(sdir.glob("*.json")):
+                if p.name.endswith(".draft.json") or p.name == "sites.json":
+                    continue
+                try:
+                    data = json.loads(p.read_text(encoding="utf-8"))
+                    if isinstance(data, dict) and data.get("meta", {}).get("siteName"):
+                        sites.append({
+                            "name": data["meta"]["siteName"],
+                            "domain": data["meta"].get("domain", p.stem),
+                            "category": "",
+                        })
+                except (json.JSONDecodeError, OSError):
+                    continue
+        if not sites:
+            return "当前无已知站点候选（sites.json 与策略目录均为空）"
+        # 推荐模式：按 query 匹配最相关候选（名称含 query 字符）
+        if query and not all:
+            q = query.strip()
+            matched = [s for s in sites if q and q in s.get("name", "")]
+            if not matched:
+                # 模糊：query 的每个字都算，取命中数多的
+                scored = []
                 for s in sites:
+                    score = sum(1 for ch in q if ch in s.get("name", ""))
+                    if score > 0:
+                        scored.append((score, s))
+                scored.sort(key=lambda x: x[0], reverse=True)
+                matched = [s for _, s in scored[:5]]
+            if matched:
+                lines = [f"与「{q}」相关的候选站点（共 {len(matched)} 个）："]
+                for s in matched:
                     name = s.get("name", "")
                     domain = s.get("domain", "")
                     cat = s.get("category", "")
-                    if name and domain:
-                        lines.append(f"  - {name} ({domain})" + (f" [{cat}]" if cat else ""))
-                if len(lines) > 1:
-                    return "\n".join(lines)
-            except (json.JSONDecodeError, OSError):
-                pass
-        # fallback：策略目录 meta
-        if not strategies_dir:
-            return "策略目录未配置，且无 sites.json，无法列出候选站点"
-        sdir = Path(strategies_dir)
-        lines = ["已知站点候选（策略 meta）："]
-        for p in sorted(sdir.glob("*.json")):
-            if p.name.endswith(".draft.json") or p.name == "sites.json":
-                continue
-            try:
-                data = json.loads(p.read_text(encoding="utf-8"))
-                if not isinstance(data, dict):
-                    continue
-                meta = data.get("meta", {})
-            except (json.JSONDecodeError, OSError):
-                continue
-            name = meta.get("siteName", "")
-            domain = meta.get("domain", p.stem)
-            lines.append(f"  - {name} ({domain})")
-        if len(lines) == 1:
-            return "当前无已知站点候选（sites.json 与策略目录均为空）"
+                    lines.append(f"  - {name} ({domain})" + (f" [{cat}]" if cat else ""))
+                return "\n".join(lines)
+        # 全列模式
+        lines = ["已知站点候选（sites.json）："]
+        for s in sites:
+            name = s.get("name", "")
+            domain = s.get("domain", "")
+            cat = s.get("category", "")
+            if name and domain:
+                lines.append(f"  - {name} ({domain})" + (f" [{cat}]" if cat else ""))
         return "\n".join(lines)
 
     def run_explorer(url: str, timeout: int = 600) -> str:
@@ -285,10 +302,13 @@ def make_rag_tools(rag_store, crawler_script: str, strategies_dir: str = "") -> 
         ),
         Tool(
             name="list_sites",
-            description="列出已知站点候选（siteName + domain），用于把用户提到的机构/学院对照到具体站点。",
+            description="列出站点候选。默认传用户提到的机构名（如：医学院）返回最相关的几个候选（推荐，不刷屏）；用户明确要求列出全部时传 all=true。",
             parameters={
                 "type": "object",
-                "properties": {},
+                "properties": {
+                    "query": {"type": "string", "description": "用户提到的机构/学院名（如：医学、软件），用于推荐相关候选"},
+                    "all": {"type": "boolean", "description": "设为 true 时列出全部站点候选（用户要求时）"},
+                },
                 "required": [],
             },
             handler=list_sites,
