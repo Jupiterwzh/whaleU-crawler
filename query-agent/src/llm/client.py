@@ -1,11 +1,36 @@
 """OpenAI 兼容 LLM 客户端。绝不硬编码 key/端点。"""
 import json
 import os
+import re
 import time
 
 from openai import OpenAI, RateLimitError, APIConnectionError
 
 from src.keys import get_key, ensure_key
+
+_SURROGATE_RE = re.compile(r"[\ud800-\udfff]")
+
+
+def _sanitize_text(text: str) -> str:
+    """清理非法 surrogate（防止 json 序列化崩溃）。"""
+    if not text:
+        return text
+    return _SURROGATE_RE.sub("\ufffd", text)
+
+
+def _sanitize_messages(messages: list) -> list:
+    """递归清理消息中的 surrogate。"""
+    out = []
+    for m in messages:
+        if not isinstance(m, dict):
+            out.append(m)
+            continue
+        d = dict(m)
+        for k, v in list(d.items()):
+            if isinstance(v, str):
+                d[k] = _sanitize_text(v)
+        out.append(d)
+    return out
 
 
 class LLMClient:
@@ -20,6 +45,7 @@ class LLMClient:
         self._client = OpenAI(base_url=base_url, api_key=api_key)
 
     def chat(self, messages, tools=None):
+        messages = _sanitize_messages(messages)
         kwargs = {"model": self.model, "messages": messages, "max_tokens": 4096, "temperature": 0.3}
         if tools:
             kwargs["tools"] = tools
