@@ -86,7 +86,7 @@ def preflight(domain: str, store: FileStore, auto_confirm: bool = False) -> Pref
 def _manage_backups(domain: str, store: FileStore):
     print(f"\n{domain} 共有 {store.backup_count(domain)} 个备份：")
     _list_backups(domain, store)
-    print("操作：删除 [N] | 启用 [N] | 简介 [N] | 列表 | exit/done 结束")
+    print("操作：删除 [N] | 启用 [N] | 简介 [N] | 列表 | exit/done 结束（N 是上方备份列表的编号，如 删除 1）")
     for round_no in range(5):
         if round_no == 3:
             print("⚠️ 已达 3 轮，上限 5 轮")
@@ -112,7 +112,7 @@ def _manage_backups(domain: str, store: FileStore):
             for idx in idx_list:
                 _show_backup_detail(domain, store, idx)
         else:
-            print("  无法识别。支持：删除 [N] | 启用 [N] | 简介 [N] | 列表 | exit")
+            print("  无法识别。支持：删除 [N] | 启用 [N] | 简介 [N] | 列表 | exit（N 是上方备份编号，如 删除 1）")
 
 
 def _list_backups(domain: str, store: FileStore):
