@@ -1,5 +1,6 @@
 """前导检查：崩溃恢复→暂存→备份→策略检查。"""
 import json
+import re
 import sys
 from dataclasses import dataclass, field
 
@@ -83,6 +84,28 @@ def preflight(domain: str, store: FileStore, auto_confirm: bool = False) -> Pref
     return PreflightResult(goal_context=goal_context)
 
 
+def _parse_backup_cmd(ans: str) -> tuple[str, list[int]]:
+    """解析备份管理命令。
+
+    返回 (动作, 编号列表)。动作：delete/enable/detail/list/exit/unknown。
+    支持写法：删除 1 / 删除1 / 1 / 删除 1 2 / 简介 3 等。
+    """
+    a = (ans or "").strip()
+    low = a.lower()
+    if low in ("exit", "done", ""):
+        return "exit", []
+    if low in ("list", "列表"):
+        return "list", []
+    idxs = [int(m) for m in re.findall(r"\d+", a)]
+    if "删除" in a or (idxs and not any(k in a for k in ("启用", "简介", "详情"))):
+        return ("delete", idxs) if idxs else ("unknown", [])
+    if "启用" in a:
+        return ("enable", idxs) if idxs else ("unknown", [])
+    if "简介" in a or "详情" in a:
+        return ("detail", idxs) if idxs else ("unknown", [])
+    return "unknown", []
+
+
 def _manage_backups(domain: str, store: FileStore):
     print(f"\n{domain} 共有 {store.backup_count(domain)} 个备份：")
     _list_backups(domain, store)
@@ -91,25 +114,23 @@ def _manage_backups(domain: str, store: FileStore):
         if round_no == 3:
             print("⚠️ 已达 3 轮，上限 5 轮")
         ans = input(f"[备份管理 第{round_no+1}/5轮] 操作: ").strip()
-        low = ans.lower()
-        if low in ("exit", "done", ""):
+        action, idxs = _parse_backup_cmd(ans)
+        if action == "exit":
             break
-        if low in ("list", "列表"):
+        if action == "list":
             _list_backups(domain, store)
             continue
-        parts = ans.split()
-        idx_list = [int(part) for part in parts if part.isdigit()]
-        if "删除" in ans and idx_list:
-            for idx in idx_list:
+        if action == "delete":
+            for idx in idxs:
                 store.backup_delete(domain, idx)
                 print(f"  已删除备份 {idx}")
             _list_backups(domain, store)
-        elif "启用" in ans and idx_list:
-            for idx in idx_list:
+        elif action == "enable":
+            for idx in idxs:
                 store.backup_swap(domain, idx)
                 print(f"  已将备份 {idx} 和当前策略交换")
-        elif ("简介" in ans or "详情" in ans) and idx_list:
-            for idx in idx_list:
+        elif action == "detail":
+            for idx in idxs:
                 _show_backup_detail(domain, store, idx)
         else:
             print("  无法识别。支持：删除 [N] | 启用 [N] | 简介 [N] | 列表 | exit（N 是上方备份编号，如 删除 1）")

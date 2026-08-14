@@ -51,3 +51,17 @@ def test_strategy_exists_continue_with_ref(tmp_path, monkeypatch):
     result = preflight("cs.nju.edu.cn", store)
     assert result.goal_context != ""
     assert "已有策略" in result.goal_context
+
+
+def test_parse_backup_cmd():
+    """备份管理命令解析：支持 删除1 / 删除 1 / 1 / 删除 1 2 等写法。"""
+    from src.preflight import _parse_backup_cmd
+    assert _parse_backup_cmd("删除1") == ("delete", [1])
+    assert _parse_backup_cmd("删除 1") == ("delete", [1])
+    assert _parse_backup_cmd("启用2") == ("enable", [2])
+    assert _parse_backup_cmd("简介 3") == ("detail", [3])
+    assert _parse_backup_cmd("删除 1 2") == ("delete", [1, 2])
+    assert _parse_backup_cmd("1") == ("delete", [1])  # 纯编号默认删除
+    assert _parse_backup_cmd("exit") == ("exit", [])
+    assert _parse_backup_cmd("列表") == ("list", [])
+    assert _parse_backup_cmd("abc") == ("unknown", [])
