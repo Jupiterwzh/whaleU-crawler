@@ -864,3 +864,43 @@ data/checkpoints/<domain>.crash.json    特殊暂存 0/1
 
 ---
 
+
+## 2026-08-14 会话二十二：测试设计驱动——分发 Agent 升级、站点候选库、交互增强、根目录集中配置
+
+### [AI] 分发 Agent 显式化（commit `08d320f`）
+
+- 用户测试设计（无关文档/测试设计.md）提出显式「分发 Agent」串联全链。经询问确认：query-agent 升级为分发 Agent，RAG 时效保持 RAGStore 内置。
+- 新增工具：`check_strategy`（查策略存在）、`run_explorer`（唤起 explorer 生成策略）；crawler 保留"无策略时委托策略 Agent"作为兜底（双保险）。
+- 规则升级为显式分发链：rag_search → check_strategy → run_explorer/run_crawler → 入库 → 再检索。兜底逻辑（策略 Agent 被终止→询问是否用过期 RAG）补入规则（commit `e0d3d16`）。
+
+### [AI] 站点候选库 sites.json（commit `4a43193`）
+
+- 用户提出利用桌面两个 docx 清单（南京大学院系网页清单 70 + 官方网页清单 67）做站点候选。
+- 解析两 docx → 去重 112 个唯一域名（名称+域名+类别+来源）→ `crawler/data/sites.json`（入库交付）。
+- `list_sites` 优先读 sites.json，fallback 策略 meta。真实验证：软件学院 software.nju.edu.cn 在清单中。
+- 规则：唯一匹配→确认；模糊（软件学院 vs 智能软件与工程学院 ise）→列候选问用户；无对应→问用户输入/新增（即用不要求收录）；多目标→依次处理。
+
+### [AI] 分发交互点（commit `386b988`）
+
+- 用户要求：展示目标/确认/未找到时主动等待用户输入；可改源文件（给绝对路径+警告）；可当场交互（列对应等）。
+- 经询问确认：query-agent 专用交互点（非改通用 agent_loop）、关键步骤后交互（非每次工具后）。
+- 实现：`_classify_input`（continue/exit/new_site/feedback）+ `_maybe_dispatch_interact`（list_sites/check_strategy/run_crawler/run_explorer 后暂停等用户）。新站点/反馈注入下一轮修正，遵守 max_adjustments 上限，EOFError 自动继续（Docker/CI 安全）。
+- 规则补：改 sites.json 时提示绝对路径 `<项目根>/crawler/data/sites.json` + 警告勿破坏 JSON 结构。
+- TDD：classify 单测 + 集成测试（list_sites→用户给新站点→反馈流入第二轮），114 tests 全绿。
+
+### [AI] 根目录集中配置（commit `8abbf01`）
+
+- 用户要求：项目根配 .env，各 Agent 环境文件同步改变（保留独立性）。
+- 经多轮询问确定方案：**根 .env 为主 + 各 Agent .env 缺失键继承根、有值覆盖根**（python-dotenv 对缺失键不覆盖，语义即"配置过的不联动、未配置的联动"）。
+- 3 Agent load_env 改为"先根后自身"；keys.py 写根 .env；新增根入口 `whale-key.py`（解决用户根目录 `python -m src.keys` ModuleNotFoundError）。
+- 迁移：根 .env.example 新建，各 Agent .env 清理（路径自动推导），README/SPEC/MANUAL_CHECKS 详述根配置模式。
+- 关键发现：python-dotenv 对 `KEY=`（空值）在 override=True 会**清空**覆盖根 → 所以用"缺失键"而非"空值"实现继承。
+
+### 教训
+
+- **测试设计是需求说明书**：用户逐条测试设计 + 追问（如"分发Agent如何辨别目标网站""对照出错能否检查修改"）逼出完整分发机制，比让 Agent 自己设计可靠。
+- **用户倾向"关键步骤交互"而非"每次工具后交互"**——交互频率要问，不臆断。
+- **根配置的"继承 vs 独立"用"缺失=继承、有值=覆盖"天然实现**，比比较值更优雅，但需注意空值陷阱（override=True 会清空）。
+- **交互需兼顾非交互环境**（Docker/CI）：EOFError 自动继续，否则容器卡死。
+
+---
