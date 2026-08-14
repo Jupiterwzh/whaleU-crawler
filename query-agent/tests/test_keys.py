@@ -1,4 +1,5 @@
 # tests/test_keys.py
+import sys
 from unittest.mock import patch
 import src.keys as keys
 
@@ -70,3 +71,27 @@ def test_env_roundtrip(monkeypatch, tmp_path):
         assert "LLM_BASE_URL" in content  # 其他行保留
         assert "LLM_API_KEY=my-secret" in content
         assert keys.get_key() == "my-secret"
+
+
+def test_cmd_cli_clear_requires_confirmation(monkeypatch, capsys):
+    """clear 需二次确认，拒绝则不删。"""
+    import src.keys as keys
+    monkeypatch.setattr(sys, "argv", ["whale-key.py", "clear"])
+    # 用户拒绝
+    monkeypatch.setattr("builtins.input", lambda prompt="": "n")
+    with patch.object(keys, "keyring"):
+        keys.cmd_cli()
+    out = capsys.readouterr().out
+    assert "确定" in out or "清除" in out  # 有确认提示
+    assert "已取消" in out  # 拒绝后取消
+
+
+def test_cmd_cli_clear_confirmed_clears(monkeypatch):
+    """clear 二次确认 y → 执行清除。"""
+    import src.keys as keys
+    monkeypatch.setattr(sys, "argv", ["whale-key.py", "clear"])
+    monkeypatch.setattr("builtins.input", lambda prompt="": "y")
+    with patch.object(keys, "keyring") as mock_kr, patch.object(keys, "_env_write_key") as mock_env:
+        keys.cmd_cli()
+    mock_kr.delete_password.assert_called_once()
+    mock_env.assert_called_once_with("")

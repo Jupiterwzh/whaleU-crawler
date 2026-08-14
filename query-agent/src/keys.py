@@ -118,8 +118,13 @@ def cmd_cli():
     elif cmd == "set":
         prompt_and_store()
     elif cmd == "clear":
-        clear_key()
-        print("✅ 已清除 key")
+        confirm = input("⚠️ 将清除全部已存储的 key（钥匙串 + .env 的 LLM_API_KEY 行）。\n"
+                         "清除后各 Agent 将无法调用 LLM，需重新配置。确定清除？(y/n): ").strip().lower()
+        if confirm in ("y", "yes"):
+            clear_key()
+            print("✅ 已清除 key")
+        else:
+            print("已取消清除")
     elif cmd == "has":
         print("true" if has_key() else "false")
     else:
