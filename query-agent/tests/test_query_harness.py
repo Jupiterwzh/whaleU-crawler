@@ -93,3 +93,49 @@ def test_finalize_keeps_full_agent_output(tmp_path):
     loop._list_all_result = None
     text = "正常回答内容，不是列表。"
     assert loop._finalize(text) == text
+
+
+def test_loop_continues_on_agent_question(tmp_path, monkeypatch):
+    """Agent 输出含提问（如'请问您指的是哪一个？'）时，用户 y 不退出，继续下一轮。"""
+    import os, json
+    monkeypatch.chdir(Path(__file__).parent.parent)
+    from src.agent_loop import AgentLoop
+    from src.harness import Harness
+    store = RAGStore(str(tmp_path))
+    h = Harness.from_yaml("agent.yaml", rag_store=store)
+    from unittest.mock import MagicMock
+    llm = MagicMock()
+    # 第一轮：输出提问（无 tool_calls）；第二轮：调 check_strategy
+    llm.chat.side_effect = [
+        {"text": "候选站点对照：\n- 软件学院 software.nju.edu.cn\n- 智能软件与工程学院 ise.nju.edu.cn\n请问您指的是哪一个？", "tool_calls": None},
+        {"text": "继续处理", "tool_calls": [{"name": "check_strategy", "arguments": {"domain": "software.nju.edu.cn"}, "id": "1"}]},
+        {"text": "软件学院无策略，准备唤起策略 Agent。", "tool_calls": None},
+    ]
+    h.tools.get("check_strategy").handler = MagicMock(return_value="策略不存在")
+    inputs = iter(["y", "y", "y"])
+    monkeypatch.setattr("builtins.input", lambda prompt="": next(inputs))
+    loop = AgentLoop(h, llm)
+    loop.run("软件学院最近有什么通知")
+    # Agent 提问后用户 y → 应继续调 check_strategy（第二轮有 tool_calls）
+    assert llm.chat.call_count >= 2
+    # 用户 y 被作为反馈注入第二轮
+    user_msgs = [c["content"] for c in llm.chat.call_args_list[1][0][0] if c["role"] == "user"]
+    assert any("用户" in m and "反馈" in m for m in user_msgs), "用户 y 应作为反馈注入"
+
+
+def test_loop_exit_on_agent_question(tmp_path, monkeypatch):
+    """Agent 提问时用户输入 exit → 结束对话（不继续）。"""
+    monkeypatch.chdir(Path(__file__).parent.parent)
+    from src.agent_loop import AgentLoop
+    from src.harness import Harness
+    store = RAGStore(str(tmp_path))
+    h = Harness.from_yaml("agent.yaml", rag_store=store)
+    llm = MagicMock()
+    llm.chat.side_effect = [
+        {"text": "请问您指的是软件学院还是智能软件与工程学院？", "tool_calls": None},
+    ]
+    monkeypatch.setattr("builtins.input", lambda prompt="": "exit")
+    loop = AgentLoop(h, llm)
+    result = loop.run("软件学院")
+    assert "用户退出" in result
+    assert llm.chat.call_count == 1, "exit 后不应再调 LLM"
