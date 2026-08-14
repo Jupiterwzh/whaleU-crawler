@@ -1,9 +1,14 @@
 # Dockerfile — 南京大学通知公告多 Agent 协作系统
-# 构建: docker build -t whalequery .
-# 运行（key 经 .env 挂载传入，不进命令行）:
-#   cd query-agent && python -m src.keys set   # 首次引导录入 key → 写入 .env
-#   docker run --rm -v $PWD/query-agent/.env:/app/query-agent/.env whalequery "问题"
+# 获取（ghcr 镜像）: docker pull ghcr.io/<owner>/whaleu-crawler:latest
+# 获取（源码构建）: git clone <repo> && docker build -t whalequery .
+# 运行（key 经根 .env 挂载传入，不进命令行/history）:
+#   python whale-key.py set                    # 首次引导录入 key → 写入根 .env
+#   docker run --rm -v $PWD/.env:/app/.env whalequery "问题"
 FROM python:3.11-slim
+
+LABEL org.opencontainers.image.title="whaleU-crawler"
+LABEL org.opencontainers.image.description="南京大学通知公告多 Agent 协作系统（策略/爬虫/RAG/分发）"
+LABEL org.opencontainers.image.source="https://github.com/Jupiterwzh/whaleU-crawler"
 
 # Node.js（crawler 是 JS）—— 用官方安装脚本，兼容 slim
 RUN apt-get update && apt-get install -y --no-install-recommends curl \

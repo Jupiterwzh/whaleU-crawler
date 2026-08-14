@@ -170,15 +170,24 @@ cd rag-manager && python rag_manager.py
 
 ## 分发（Docker）
 
+**获取方式（二选一）**：
+
 ```bash
-# 1. 构建镜像（只含代码，不含任何 key）
+# 方式 A：从 GitHub Container Registry 拉取（无需本地构建）
+docker pull ghcr.io/Jupiterwzh/whaleU-crawler:latest
+
+# 方式 B：从源码构建（需 git clone + docker）
+git clone <仓库地址> && cd <项目>
 docker build -t whalequery .
+```
 
-# 2. 配置 key（首次引导录入，隐藏输入；写入项目根 .env）
-python whale-key.py set    # 根目录执行，key 写根 .env
-#   或手动编辑 .env（根目录集中配置，见「3. 配置凭据」）
+**运行**（key 经根 .env 挂载，不进命令行/history）：
 
-# 3. 运行（挂载根 .env，key 不写入镜像、不进命令行）
+```bash
+# 1. 配置 key（首次引导录入，隐藏输入；写入项目根 .env）
+python whale-key.py set
+
+# 2. 运行（挂载根 .env）
 docker run --rm \
   -v $PWD/.env:/app/.env \
   whalequery "计算机学院最近有什么通知"
