@@ -48,6 +48,11 @@ def resolve_rag_dir() -> str:
 
 def answer(question: str, rag_dir: str | None = None) -> str:
     """执行一次查询：RAG 检索 → 不够则爬虫补充 → 返回答案。CLI 与 WebUI 共用。"""
+    # 从问题提取目标域名（如 cs.nju.edu.cn），供 rag_search 无参/无 domain 时兜底
+    import re as _re
+    m = _re.search(r"([a-z0-9-]+\.nju\.edu\.cn)", question.lower())
+    if m:
+        os.environ["QUERY_DOMAIN"] = m.group(1)
     store = RAGStore(rag_dir or resolve_rag_dir())
     if store.is_stale():
         store.refresh()

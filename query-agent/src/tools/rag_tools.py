@@ -121,10 +121,16 @@ _SITES_JSON = Path(__file__).resolve().parent.parent.parent.parent / "crawler" /
 def make_rag_tools(rag_store, crawler_script: str, strategies_dir: str = "") -> list[Tool]:
     """装配 query-agent（分发 Agent）的工具：rag_search / run_crawler / check_strategy / run_explorer。"""
 
-    def rag_search(query: str, top_k: int = 5, domain: str = None) -> str:
-        """检索 RAG；可指定 domain 过滤（如查某站点全部通知）。query 为空且给 domain 时列出该站全部。"""
+    def rag_search(query: str = "", top_k: int = 5, domain: str = None) -> str:
+        """检索 RAG；可指定 domain 过滤。query 为空且 domain 给定时列出该站点全部通知（默认最多 100 条）。
+        未传 domain 时从用户问题提取（QUERY_DOMAIN env）兜底。"""
+        import os as _os
+        if not domain:
+            domain = _os.environ.get("QUERY_DOMAIN")
         if not (query or "").strip() and domain:
-            hits = rag_store.list_by_domain(domain, top_k)
+            # '所有通知'场景：列出尽量全（至少 100 条）
+            limit = max(top_k, 100)
+            hits = rag_store.list_by_domain(domain, limit)
             return _format_list_all(hits, domain)
         return _format_search_results(rag_store.search(query, top_k, domain=domain))
 
@@ -223,15 +229,15 @@ def make_rag_tools(rag_store, crawler_script: str, strategies_dir: str = "") -> 
     return [
         Tool(
             name="rag_search",
-            description="在已入库的通知 RAG 中检索，返回命中条目的标题/日期/URL/正文片段；可指定 domain 过滤（如 cs.nju.edu.cn）。",
+            description="在已入库的通知 RAG 中检索，返回命中条目的标题/日期/URL/正文片段；可指定 domain 过滤（如 cs.nju.edu.cn）。查询某站点全部通知时：query 留空 + domain 指定站点。",
             parameters={
                 "type": "object",
                 "properties": {
-                    "query": {"type": "string", "description": "检索关键词（查某站点全部通知时可用通用词如'通知'）"},
-                    "top_k": {"type": "integer", "description": "返回条数，默认 5；问'所有/全部通知'时用 20~50"},
-                    "domain": {"type": "string", "description": "按域名过滤（如 cs.nju.edu.cn），可选"},
+                    "query": {"type": "string", "description": "检索关键词；查某站点全部通知时留空"},
+                    "top_k": {"type": "integer", "description": "返回条数，默认 5；问'所有/全部通知'时用 50~100"},
+                    "domain": {"type": "string", "description": "按域名过滤（如 cs.nju.edu.cn），可选；未传时从用户问题自动提取"},
                 },
-                "required": ["query"],
+                "required": [],
             },
             handler=rag_search,
             require_approval=False,
