@@ -151,3 +151,19 @@ def test_list_sites_prefers_sites_json(tmp_path, monkeypatch):
         json.dumps({"meta": {"domain": "cs.nju.edu.cn", "siteName": "计算机学院"}}), encoding="utf-8")
     out2 = tool.handler()
     assert "cs.nju.edu.cn" in out2 and "计算机学院" in out2
+
+
+def test_rag_search_domain_filter(tmp_path):
+    """rag_search 支持 domain 过滤。"""
+    from src.tools.rag_tools import make_rag_tools
+    store = RAGStore(str(tmp_path))
+    store.ingest([
+        {"title": "cs 通知", "content": "计算机学院通知正文足够长", "url": "https://cs.nju.edu.cn/1", "domain": "cs.nju.edu.cn", "date": "2026-08-01"},
+        {"title": "yzb 通知", "content": "研究生招生通知正文足够长", "url": "https://yzb.nju.edu.cn/1", "domain": "yzb.nju.edu.cn", "date": "2026-08-01"},
+    ])
+    store.refresh()
+    tools = make_rag_tools(store, "node")
+    tool = [t for t in tools if t.name == "rag_search"][0]
+    out = tool.handler(query="通知", top_k=10, domain="cs.nju.edu.cn")
+    assert "cs.nju.edu.cn" in out
+    assert "yzb.nju.edu.cn" not in out
