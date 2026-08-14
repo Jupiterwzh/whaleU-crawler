@@ -38,3 +38,6 @@ jobs:
 
       - name: Run crawler tests
         run: cd crawler && node --test test/collector.test.js
+
+      - name: Build Docker image (container distribution)
+        run: docker build -t whalequery:ci .

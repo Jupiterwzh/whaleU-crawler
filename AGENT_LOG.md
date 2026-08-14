@@ -30,6 +30,7 @@
 | 08-13 | B10 列表分类/关键词/用户选择 | TDD | controller | `fa1239d` `b7d60bb` 等 | 关键词改独立配置、category 仅参考 | 先确认选型再实现避免返工 |
 | 08-13 | B11 外链过滤 + 域名核对 | TDD | controller | `e1d6f4e` `a03fada` | 只过滤公众号外链（小组已实现公众号爬取） | 从 NJU 官网核对 jwb=纪委/xkb=学科建设 |
 | 08-13 | B12 收尾（文档/CI/路径修复） | — | controller | `098140f` `4a47a75` | 大作业收尾 | 硬性项 CI/WebUI/Docker/推送待用户执行 |
+| 08-14 | B13 凭据入口可用化 + 4.x 核对 | TDD + verification | controller | `9a1cb23` `02d52ad` | 发现 whale-key 入口死代码；.env.example 仍为 CherryIN | 作业"可查看/更新/清除"须有可用 CLI；文档核对暴露存量缺陷 |
 
 ---
 
@@ -819,5 +820,37 @@ data/checkpoints/<domain>.crash.json    特殊暂存 0/1
 ### 待办（无关文档/本地工具/待办.md）
 - [ ] 冷启动测试确认（是否补"实现前"演示，可选）
 - [ ] 逐 Agent 验收（explorer/query/rag-manager/crawler）
+
+---
+
+## 2026-08-14 会话二十一：凭据入口可用化 + §3.1/4.x 逐条核对
+
+### [AI] §3.1 凭据安全核对（4 子项全过 + 发现存量缺陷）
+
+- **结论**：key 不硬编码（grep 无 sk- 长 token）；不提交 Git（.env 全 gitignore，`git log -S sk-9a8d` 历史零痕迹）；keyring+getpass+查看/更新/清除（get 只显长度）；SPEC §7 威胁模型齐全。
+- **发现存量缺陷并修复（commit `9a1cb23`）**：
+  1. `keys.py` 缺 `if __name__ == "__main__"` 入口 → `python -m src.keys set/get/clear` 是**死代码**，教师无法实际配置/查看/清除 key。
+  2. WSL/Docker/无桌面环境 keyring 无后端（`keyring.backends.fail.Keyring`）→ 新增 **.env 降级存储**（get/set/clear 全走 .env 文件），并同步三份 keys.py。
+  3. `.env.example` 仍为 CherryIN 旧配置（`open.cherryin.cc`/`CHERRYIN_API_KEY`/`deepseek-v4-flash(free)`）→ 更新为 DeepSeek 官方（`api.deepseek.com/v1`/`DEEPSEEK_API_KEY`/`deepseek-v4-flash`）。
+- **验证（模拟教师操作全走通）**：`set` 隐藏录入 → `get` 显 20 字符不回显 → `has` true → `clear` → `get` 未配置。新增 2 测试（env 降级、env 往返保留其他行）。107 tests 全绿。
+- **文档**：SPEC §7 + README 安全边界补 keyring 无桌面环境限制说明；README 配置教程拆"方式 A .env / 方式 B CLI 引导"。
+
+### [AI] §4.1-4.4 规约交付核对
+
+- 4.1 过程 ✅（SPEC_PROCESS §2 记录 4 轮 brainstorm 追问）
+- 4.2 SPEC 10 节 ✅（无需改动）
+- 4.3 PLAN task 规约 ⚠️ **补全（commit `02d52ad`）**：原每 task 只有"产出/Commit/状态"，补"目标/涉及文件/实现要点/验证步骤（含失败测试判据）"，数据取自 AGENT_LOG 真实记录，验证状态更新为 107 tests + 逐 Agent 验收结果。
+- 4.4 SPEC_PROCESS ✅（≥3 轮迭代 + 采纳/推翻 + 冷启动 + 反思）
+
+### [AI] §4.7-4.9 仓库/测试/日志核对
+
+- 4.7 ✅：151 commits 逐功能提交（非单次全代码）；`.env` 无跟踪；真实 DeepSeek key 历史零痕迹；commit 标注 subagent 由 AGENT_LOG 摘要表承担（task 级关联 subagent+commit+人工干预）。
+- 4.8 ⚠️ **CI 补 docker build**（commit 待推）：容器分发的 CI 此前只跑单元测试，按 4.8"若选容器分发，CI 还须构建镜像"补 `docker build -t whalequery:ci .`。
+- 4.9 ✅：AGENT_LOG 823 行，时间戳+Task+技能+Commit+人工干预+教训齐全，七步工作流偏离如实说明。
+
+### 教训
+
+- **作业条款核对是"存量缺陷探测器"**：§3.1 核对逼出 keys.py 死代码、CherryIN 残留 .env.example；4.x 核对逼出 CI 缺 docker build。逐条对原文核对比自查有效。
+- **"教师可操作"视角**：纯后端项目无网页入口，"首次配置/查看/更新/清除"必须有 CLI 路径——文档写得再全，入口是死代码等于没做。
 
 ---
