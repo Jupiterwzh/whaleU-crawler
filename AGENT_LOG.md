@@ -794,4 +794,9 @@ data/checkpoints/<domain>.crash.json    特殊暂存 0/1
 - [ ] query-agent 真实查询验收
 - [ ] 批量站点策略生成
 
+### [AI] 七步工作流偏离说明（如实记录）
+- **未使用 using-git-worktrees**：项目全程单分支 `main` 直接提交，未按 worktree/PR 隔离。原因：项目是单人在已有 MVP 基础上持续演进，未走多分支协作；且开发主要在本地单机进行。最终改用一个 Git 仓库、main 单分支交付。
+- **TDD、brainstorm、writing-plans、subagent-driven、requesting-code-review** 均真实发生（见各会话 commit 与 task 摘要表）。
+- **SPEC 一致性修正**：LLM 供应商（CherryIN→DeepSeek 官方）、分发行（PyPI→Docker）已按真实实现更新 SPEC §5/§7/§8。
+
 ---

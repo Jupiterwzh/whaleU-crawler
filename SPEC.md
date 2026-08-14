@@ -137,7 +137,8 @@
 
 ### 外部依赖
 
-- LLM：CherryIN（OpenAI 兼容端点 `https://open.cherryin.cc/v1`）
+- LLM：DeepSeek 官方（OpenAI 兼容端点 `https://api.deepseek.com/v1`，模型 `deepseek-v4-flash`）
+  - 曾用 CherryIN（`https://open.cherryin.cc/v1`），因其免费档 TPM 限流过紧，改用 DeepSeek 官方 key（`DEEPSEEK_API_KEY`）
 - 爬虫：Node.js 18+（内置 http，无 npm 依赖）
 - Python 3.11+（openai / pyyaml / httpx / pytest / python-dotenv）
 
@@ -177,11 +178,12 @@
 | .env 明文暴露 | 说明风险：`.env` 为明文、进程环境可见；生产可用钥匙串/加密文件替代 |
 | 首个用户配置困难 | 首启引导安全录入（隐藏输入），支持查看/更新/清除（不回显） |
 
-### 分发设计（容器/包）
+### 分发设计（容器）
 
-- **Python 包分发**（首选）：`pip install` 安装，`whalequery` / `whale-crawl` 两个 CLI 命令
-- README 写清：获取方式、运行命令、key 在目标机配置（`.env` 或环境变量）、已知限制
-- CI：`.gitlab-ci.yml` 含 `unit-test` job
+- **Docker 容器分发**：`Dockerfile` 构建（python:3.11 + node:18），单条 `docker build` + `docker run`
+- 运行：`docker run -v $PWD/query-agent/.env:/app/query-agent/.env -e DEEPSEEK_API_KEY=$DEEPSEEK_API_KEY whalequery "问题"`
+- README 写清：获取方式、运行命令、key 在目标机配置（`.env` 或环境变量）、已知限制（Docker/Linux 下 keyring 可能无后端，key 用环境变量传入）
+- CI：`.github/workflows/ci.yml`（GitHub Actions）+ `.gitlab-ci.yml`，均含 `unit-test` job
 
 ## 8. 技术选型与理由
 
@@ -189,10 +191,10 @@
 |----|------|------|
 | 语言 | Python 3.11+ | Agent 生态成熟、测试友好、跨平台 |
 | 爬虫 | Node.js 内置 http | 无 npm 依赖、轻量 |
-| LLM | CherryIN deepseek | OpenAI 兼容、免费额度、无需翻墙 |
+| LLM | DeepSeek 官方（deepseek-v4-flash） | OpenAI 兼容；曾用 CherryIN 免费档，因 TPM 限流改用官方 |
 | RAG | 自研 JSONL + 倒排索引 | 确定性可测、无重依赖；语义检索可插拔预留 |
 | 测试 | pytest + mock/stub LLM | 核心机制可确定性单测（B.2） |
-| 分发 | PyPI 包 | 单命令安装/运行 |
+| 分发 | Docker 容器 | 单命令构建/运行；兼有 GitHub Actions + GitLab CI |
 
 ## 9. 验收标准
 
