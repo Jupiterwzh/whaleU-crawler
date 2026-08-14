@@ -12,9 +12,8 @@ explorer-agent/traces/
 query-agent/traces/
 
 # RAG / 备份运行产物（Agent 运行时生成，非源码）
-crawler/data/rag/
+# 注：RAG 数据（data/rag/、crawler/data/rag/）作为示例数据提交（作业允许），仅备份不提交
 crawler/data/backups/
-data/rag/
 data/backups/
 
 # 旧 src 暂留（仅根目录，不影响 explorer-agent/src）
@@ -28,3 +27,6 @@ data/backups/
 
 # 本地运行时配置（含个人绝对路径），仅用 .example 模板
 opencode.json
+
+# Superpowers SDD 内部工作产物
+.superpowers/
