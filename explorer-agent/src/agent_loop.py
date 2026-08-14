@@ -78,7 +78,7 @@ def _build_marked_tree(nodes: list[dict], selected_urls: set[str]) -> str:
             mark = ntype
         lines.append(f"{indent}[{mark}] {title} ({url})")
     for url in extra_selected:
-        lines.append(f"├── [➕用户新增] (用户指定入口) ({url})")
+        lines.append(f"├── [⚠️不在结构树] (用户指定入口 {url}——不在遍历到的结构中，请自行确认后直接修改策略 JSON，本流程不负责)")
     return "\n".join(lines)
 
 

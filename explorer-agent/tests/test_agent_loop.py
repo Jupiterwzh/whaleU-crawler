@@ -215,7 +215,7 @@ def test_build_marked_tree():
 
 
 def test_build_marked_tree_shows_user_added_urls():
-    """用户新增的入口（不在 crawl_structure 节点里）也应显示为 ➕用户新增。"""
+    """用户指定的入口（不在 crawl_structure 节点里）标记为 ⚠️不在结构树，提示直接改 JSON。"""
     from src.agent_loop import _build_marked_tree
     nodes = [
         {"index": 1, "url": "https://cs.nju.edu.cn/", "title": "首页", "type": "home", "depth": 0},
@@ -224,7 +224,8 @@ def test_build_marked_tree_shows_user_added_urls():
     selected = {"https://cs.nju.edu.cn/1702/list.htm", "https://cs.nju.edu.cn/9999/list.htm"}
     tree = _build_marked_tree(nodes, selected)
     assert "9999/list.htm" in tree
-    assert "➕用户新增" in tree or "用户新增" in tree
+    assert "⚠️不在结构树" in tree
+    assert "直接修改策略 JSON" in tree
 
 
 def test_confirm_preview_warns_truncated():
