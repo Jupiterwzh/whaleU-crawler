@@ -203,7 +203,7 @@ def make_rag_tools(rag_store, crawler_script: str, strategies_dir: str = "") -> 
             return "当前无已知站点候选（sites.json 与策略目录均为空）"
         return "\n".join(lines)
 
-    def run_explorer(url: str, timeout: int = 300) -> str:
+    def run_explorer(url: str, timeout: int = 600) -> str:
         """唤起 explorer-agent 生成/更新该站点的爬取策略（--explore-only）。"""
         import subprocess as sp
         agent_main = Path(__file__).resolve().parent.parent.parent.parent / "explorer-agent" / "main.py"
