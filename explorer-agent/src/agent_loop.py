@@ -144,6 +144,7 @@ class AgentLoop:
         self.strategy_path = strategy_path
         self._list_candidates: list[dict] = []
         self._structure_nodes: list[dict] = []
+        self._structure_truncated = False
 
     def _load_selected_urls(self) -> set[str]:
         """从策略草稿（优先）或正式策略读 entries URL 作为选中集合。"""
@@ -170,7 +171,10 @@ class AgentLoop:
         if self._structure_nodes:
             selected = self._load_selected_urls()
             tree = _build_marked_tree(self._structure_nodes, selected)
-            return f"=== 完整网站结构（程序生成，含选中标记）===\n{tree}"
+            warn = ""
+            if self._structure_truncated:
+                warn = "\n⚠️ 遍历可能不完整（链接数超上限 truncated），建议用更大 max_links 重试确认无遗漏入口。"
+            return f"=== 完整网站结构（程序生成，含选中标记）===\n{tree}{warn}"
         # 兜底：无结构节点时用 Agent 输出预览
         return _preview(text)
 
@@ -304,6 +308,7 @@ class AgentLoop:
                             _data = json.loads(result)
                             if isinstance(_data, dict) and isinstance(_data.get("nodes"), list):
                                 self._structure_nodes = _data["nodes"]
+                                self._structure_truncated = bool(_data.get("truncated"))
                         except json.JSONDecodeError:
                             pass
                     context.append({"role": "tool", "tool_call_id": tc["id"], "content": result})

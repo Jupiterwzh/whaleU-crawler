@@ -225,3 +225,16 @@ def test_build_marked_tree_shows_user_added_urls():
     tree = _build_marked_tree(nodes, selected)
     assert "9999/list.htm" in tree
     assert "➕用户新增" in tree or "用户新增" in tree
+
+
+def test_confirm_preview_warns_truncated():
+    """crawl_structure 返回 truncated 时，确认预览提示遍历可能不完整。"""
+    from src.agent_loop import AgentLoop, _build_marked_tree
+    from unittest.mock import MagicMock
+    loop = AgentLoop(MagicMock(), MagicMock())
+    loop._structure_nodes = [
+        {"index": 1, "url": "https://cs.nju.edu.cn/", "title": "首页", "type": "home", "depth": 0},
+    ]
+    loop._structure_truncated = True
+    preview = loop._confirm_preview("")
+    assert "⚠️" in preview and "遍历可能不完整" in preview
