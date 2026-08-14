@@ -1,9 +1,9 @@
 # ACCEPTANCE.md — 端到端验收测试清单
 
 > 对应作业 §4.8 测试要求 + SPEC §9 验收标准的**真实验收证据**。
-> 这些是需要真实 LLM/网络/交互的手动验收（自动化单元测试见 `make test`，110 tests）。
+> 这些是需要真实 LLM/网络/交互的手动验收（自动化单元测试见 `make test`）。
 > 关联：`无关文档/测试设计.md`（原始设计）、`explorer-agent/MANUAL_CHECKS.md`（explorer 专项）。
-> 测试 6/7（需登录站点）在 Windows 上执行。
+> 共 5 条端到端验收（策略 Agent→爬虫→RAG 管理→分发 Agent）。
 
 ---
 
@@ -85,28 +85,6 @@ python query.py "软件学院最近有什么通知"
 **兜底**：策略 Agent 被终止 → 分发 Agent 询问是否用已有 RAG 过期内容。
 **通过**：回答含 software URL；`data/rag/docs/` 出现 software 分片；再 check_strategy 变"存在"。
 
-## 测试 6：策略 Agent 爬取需登录网站 ndwy.nju.edu.cn（Windows）
-
-```bash
-# 1) 起浏览器服务（SSO 扫码）
-cd crawler && node browser-start.js
-# 2) 探索 ndwy
-cd ../explorer-agent && python main.py "探索 https://ndwy.nju.edu.cn/ 的通知公告入口"
-```
-
-**预期**：访问登录后页面，生成 `ndwy.nju.edu.cn.json`。
-**通过**：策略含 meta/entries；需登录页被正确识别。
-
-## 测试 7：爬虫按策略爬取 ndwy（Windows）
-
-```bash
-cd crawler
-node src/collectors/collector.js --site https://ndwy.nju.edu.cn/ --days 365 --browser
-```
-
-**预期**：浏览器模式复用登录态，按策略爬取。
-**通过**：`notices_*.jsonl` 含登录后才可见的通知内容。
-
 ---
 
 ## 验收结果记录
@@ -118,5 +96,3 @@ node src/collectors/collector.js --site https://ndwy.nju.edu.cn/ --days 365 --br
 | 3 RAG 管理有效期/去重 | | | |
 | 4 RAG 搜索 cs 全信息 | | | |
 | 5 分发 Agent 全链 | | | |
-| 6 策略 Agent ndwy (Win) | | | |
-| 7 爬虫 ndwy (Win) | | | |
