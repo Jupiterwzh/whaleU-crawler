@@ -40,7 +40,7 @@ whaleU-crawler/
 ├── Dockerfile / Makefile
 ├── .gitlab-ci.yml            # CI：unit-test job
 ├── AGENTS.md / AGENT_LOG.md / README.md
-└── SPEC.md / PLAN.md / SPEC_PROCESS.md / REFLECTION.md
+└── opencode.json             # opencode 工具配置
 ```
 
 ## 快速开始
