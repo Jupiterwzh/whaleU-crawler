@@ -1,0 +1,58 @@
+{
+  "meta": {
+    "domain": "software.nju.edu.cn",
+    "siteName": "南京大学软件学院",
+    "strategyVersion": 1,
+    "created": "2026-08-14T13:57:01.154Z",
+    "updated": "2026-08-14T13:57:01.154Z"
+  },
+  "entries": [
+    {
+      "name": "通知公告",
+      "url": "https://software.nju.edu.cn/tzgg/index.html",
+      "type": "dataList",
+      "description": "主入口：招生/教学/人事等学院通知公告（channelId=6439，页内 dataList 内嵌全部历史条目）",
+      "paginationType": "none",
+      "paginationHint": "苏迪CMS ajaxpage：列表数据以 dataList JSON 内嵌于页面首屏，无 URL 分页",
+      "estimatedCount": 190
+    },
+    {
+      "name": "学院新闻",
+      "url": "https://software.nju.edu.cn/xyxw/index.html",
+      "type": "dataList",
+      "description": "学院科研/获奖/要闻动态，非严格意义的公告，可作补充入口",
+      "paginationType": "none",
+      "paginationHint": "苏迪CMS ajaxpage，channelId=6437，dataList 内嵌",
+      "estimatedCount": 240
+    },
+    {
+      "name": "学工动态",
+      "url": "https://software.nju.edu.cn/xgdt/index.html",
+      "type": "dataList",
+      "description": "学工/党建/就业类动态，可作补充入口",
+      "paginationType": "none",
+      "paginationHint": "苏迪CMS ajaxpage，channelId=6438，dataList 内嵌",
+      "estimatedCount": 280
+    }
+  ],
+  "pagination": {
+    "type": "none",
+    "baseUrl": "https://software.nju.edu.cn/tzgg/index.html",
+    "pattern": ""
+  },
+  "extraction": {
+    "titleMatch": "",
+    "dateMatch": "",
+    "hrefMatch": "",
+    "filterKeywords": []
+  },
+  "notes": "苏迪CMS（识别特征：/njdx/ 脚本 + jquery.sudy.js + ajaxpage 组件）。三个新闻栏（tzgg/xyxw/xgdt）均为 ajaxpage 列表页，页面内嵌 dataList JSON（含 url/title/daytime 字段），type=dataList 一次抓取即可获得条目，无需 URL 分页（list2.htm / index_2.html 均回落首页）。tzgg 内个别条目为外链（rczp.nju.edu.cn 招聘公告、mp.weixin.qq.com 公众号），collector 自动跳过微信外链。首页本身无 dataList（静态渲染），不作为入口。",
+  "_draftMeta": {
+    "domain": "software.nju.edu.cn",
+    "siteName": "南京大学软件学院",
+    "strategyVersion": 3,
+    "created": "2026-08-16T00:00:00Z",
+    "updated": "2026-08-16T00:00:00Z"
+  },
+  "version": 3
+}

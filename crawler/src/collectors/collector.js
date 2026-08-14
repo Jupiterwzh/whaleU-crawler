@@ -833,8 +833,15 @@ async function crawlSite(rootUrl, opts = {}) {
   const parsedRoot = new URL(rootUrl);
   const domain = parsedRoot.hostname;
 
-  // ---- 策略查询：首次爬取时自动分析生成策略 ----
+  // ---- 策略查询：优先正式策略，其次已存在的草稿（免重复探索），最后自动分析 ----
   let strategy = forceStrategy ? null : getStrategy(domain);
+  if (!strategy) {
+    const draft = getDraft(domain);
+    if (draft) {
+      console.log(`\n== [策略] 未找到正式策略，但发现草稿策略（${domain}.draft.json），确认并使用草稿爬取...`);
+      strategy = confirmDraft(domain) || draft;
+    }
+  }
   if (!strategy) {
     console.log(`\n== [策略] 未找到 ${domain} 的爬取策略，正在自动分析...`);
     strategy = await analyzeSite(rootUrl);
@@ -1265,6 +1272,26 @@ async function main() {
           }
         } else {
           // 兼容旧格式策略（无entries）
+          await crawlSite(rootUrl, { maxDays, maxPages, outputFile, forceStrategy: true });
+        }
+        return;
+      }
+
+      // 无正式策略 → 优先用已存在的草稿（免重复探索/超时）
+      const draft = getDraft(domain);
+      if (draft) {
+        console.log(`\n== 发现草稿策略（${domain}.draft.json），确认并使用草稿爬取 ==`);
+        const confirmed = confirmDraft(domain) || draft;
+        console.log(`  站点: ${confirmed.meta?.siteName || domain}`);
+        console.log(`  入口数: ${confirmed.entries?.length || 0}`);
+        if (confirmed.entries && confirmed.entries.length > 0) {
+          for (const entry of confirmed.entries) {
+            if (entry.url) {
+              console.log(`\n=== 爬取入口: ${entry.name} ===`);
+              await crawlNotices(entry.url, { maxDays, maxPages });
+            }
+          }
+        } else {
           await crawlSite(rootUrl, { maxDays, maxPages, outputFile, forceStrategy: true });
         }
         return;
