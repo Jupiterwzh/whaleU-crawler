@@ -763,3 +763,35 @@ data/checkpoints/<domain>.crash.json    特殊暂存 0/1
 - 教训：实现前先确认用户选型（关键词配置误选经验库→用户纠正为独立配置，重做）
 
 ---
+
+## 2026-08-13 会话十九：大作业收尾（结构整理 + CI 通过）
+
+### [AI] 交付结构调整
+- 大作业交付物移至仓库根：`SPEC.md`/`PLAN.md`/`SPEC_PROCESS.md`/`REFLECTION.md`
+- `query-agent/SPEC.md`、`rag-manager/SPEC.md` 保留为组件说明
+- 本地工具/教程文档移入 `无关文档/`（gitignore，不提交）：待办、流程参考、配置检查.bat、crawler 旧文档、docs 生成脚本
+- **失误修复**：曾误把 `opencode.json`（项目运行必需）移入无关文档，已恢复跟踪
+- README 目录树、Dockerfile 依赖、Docker 运行命令修正
+
+### [AI] 凭据与结构终检
+- 无硬编码 key/路径（/home/wangzhi、/mnt/c、sk- 均无）
+- .env 全 gitignore，无 .env/secret/credential 被跟踪
+- 105 测试全绿（explorer 70 + query 26 + rag 3 + crawler 6）
+
+### [AI] REFLECTION 优化
+- 按用户要求，把个人感想（项目由来、成长经历、文档说明）并入 REFLECTION
+- 技术反思部分用口语化文风重写，举例真实（B1 bug、main.py 重构、冷启动），去掉疑似杜撰表述
+- 汉字 1982，无星号加粗
+
+### [AI+人] GitHub Actions
+- 新增 `.github/workflows/ci.yml`（unit-test job，与 .gitlab-ci.yml 等价）
+- 用户推送后 Actions 触发 `unit-test #1`，**通过**（绿色）
+- 作业"末次 CI pass"达成；GitHub + GitLab 双 CI 保留
+
+### 待办（见无关文档/本地工具/待办.md）
+- [ ] WebUI 部署到可访问地址（作业 §五.9）
+- [ ] Docker build/run 验证（分发要求）
+- [ ] query-agent 真实查询验收
+- [ ] 批量站点策略生成
+
+---
