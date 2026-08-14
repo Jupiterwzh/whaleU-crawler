@@ -70,9 +70,9 @@
 | 项 | 内容 |
 |----|------|
 | 输入 | `--site <url> --days N --max-pages M` |
-| 行为 | 按策略爬取通知列表页+详情页，输出 JSONL |
-| 输出 | `crawler/data/notices_*.jsonl`（含标题/URL/时间/正文） |
-| 边界 | 无策略 → 委托 explorer-agent 生成（模式 A） |
+| 行为 | 按策略爬取通知列表页+详情页，输出 JSONL；提取标题/正文/发布时间/附件 URL/视频音频标志 |
+| 输出 | `crawler/data/notices_*.jsonl`（含标题/URL/时间/正文/attachments/hasVideo/hasAudio） |
+| 边界 | 无策略 → 委托 explorer-agent 生成（模式 A）；**只提取文本正文，不抓取/存储图片、视频、音频文件**（附件 URL 标注在 content，如"正文见附件：...pdf"）；PDF/Flash/纯图片型页面正文短，靠附件承载 |
 | 错误处理 | 站点不可达 → 报错并跳过 |
 
 ### 3.4 explorer-agent（已有，策略 Agent）

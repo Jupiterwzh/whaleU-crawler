@@ -380,6 +380,9 @@ function extractArticle(html, url) {
   const attachmentPatterns = [
     /href=["']([^"']*\_upload\/article\/files\/[^"']+\.(?:pdf|doc|docx|xls|xlsx|zip|rar|ppt|pptx))["']/gi,
     /href=["']([^"']*(?:attachment|attach|file|download|附件)[^"']*\.(?:pdf|doc|docx|xls|xlsx|zip|rar|ppt|pptx))["']/gi,
+    // PDF/Flash 播放器嵌入（苏迪 CMS wp_pdf_player 用 pdfsrc/swsrc 属性）
+    /pdfsrc=["']([^"']+\.(?:pdf))["']/gi,
+    /swsrc=["']([^"']+\.(?:swf))["']/gi,
   ];
   for (const pat of attachmentPatterns) {
     let m;
@@ -394,9 +397,15 @@ function extractArticle(html, url) {
   const hasVideo = /<video[\s>]/i.test(html) || /<embed[^>]+youtube/i.test(html) || /<iframe[^>]+video\.taobao/i.test(html);
   const hasAudio = /<audio[\s>]/i.test(html);
 
+  // 短正文且含附件：提示正文在附件里（PDF/图片型通知正文通常承载在附件）
+  let finalContent = content.slice(0, 20000);
+  if (finalContent.trim().length < 200 && attachmentUrls.length > 0) {
+    finalContent = (finalContent.trim() + '（正文见附件：' + attachmentUrls.join('; ') + '）').slice(0, 20000);
+  }
+
   return {
     title,
-    content: content.slice(0, 20000),
+    content: finalContent,
     publishTime,
     url,
     attachments: attachmentUrls.slice(0, 20),

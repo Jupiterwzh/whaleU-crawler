@@ -3,7 +3,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert');
-const { isNotificationListPage } = require('../src/collectors/collector');
+const { isNotificationListPage, extractArticle } = require('../src/collectors/collector');
 
 // 苏迪 CMS 列表页特征：news_title + news_meta 数量匹配
 const listHtml = `
@@ -60,4 +60,55 @@ test('微信外链不作为通知提取', () => {
   assert.equal(notices.length, 1);
   assert.equal(notices[0].href, 'https://cs.nju.edu.cn/a/page.htm');
   assert.ok(!notices.some(n => /weixin/.test(n.href)));
+});
+
+
+test('PDF/图片型页面 content 附加附件提示', () => {
+  // 正文是 PDF 播放器（正文短，附件承载内容）
+  const html = `<html><head><title>寒假通知</title></head><body>
+    <div class="article">
+      <h1>寒假通知</h1>
+      <span class="arti_update">发布时间：2026-01-16</span>
+      <div class="wp_articlecontent">
+        <div class="wp_pdf_player" pdfsrc="/_upload/article/files/2e/61/x.pdf"></div>
+      </div>
+    </div>
+  </body></html>`;
+  const art = extractArticle(html, 'https://cs.nju.edu.cn/4f/page.htm');
+  // 正文短，但 attachments 含 PDF
+  assert.ok(art.attachments.length > 0, '应提取附件');
+  assert.ok(art.attachments.some(a => a.includes('.pdf')), '附件含 pdf');
+});
+
+
+test('普通文字正文提取完整', () => {
+  const html = `<html><head><title>通知</title></head><body>
+    <div class="article">
+      <h1>关于暑期工作的通知</h1>
+      <span class="arti_update">发布时间：2026-07-01</span>
+      <div class="wp_articlecontent">
+        <p>这是通知的第一段正文内容，包含了具体的暑期工作安排细节。</p>
+        <p>第二段继续说明相关事项和注意事项。</p>
+      </div>
+    </div>
+  </body></html>`;
+  const art = extractArticle(html, 'https://cs.nju.edu.cn/u/page.htm');
+  assert.ok(art.content.length > 30, '正文应完整');
+  assert.ok(art.content.includes('暑期工作安排'), '正文内容正确');
+});
+
+
+test('短正文 PDF 型 content 附加附件提示', () => {
+  const html = `<html><head><title>寒假通知</title></head><body>
+    <div class="article">
+      <h1>寒假通知</h1>
+      <span class="arti_update">发布时间：2026-01-16</span>
+      <div class="wp_articlecontent">
+        <div class="wp_pdf_player" pdfsrc="/_upload/article/files/2e/61/x.pdf"></div>
+      </div>
+    </div>
+  </body></html>`;
+  const art = extractArticle(html, 'https://cs.nju.edu.cn/4f/page.htm');
+  // 正文短且含附件 → content 提示正文见附件
+  assert.ok(art.content.includes('.pdf') || art.content.includes('附件'), '短正文应提示附件');
 });

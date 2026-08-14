@@ -47,13 +47,20 @@ def _to_ingest_records(jsonl_path: Path, fallback_domain: str) -> list[dict]:
         url = raw.get("url") or raw.get("href") or ""
         title = raw.get("title", "")
         content = raw.get("content") or f"{title} {url}".strip()
-        records.append({
+        rec = {
             "title": title,
             "content": content,
             "url": url,
             "domain": _domain_of(url) or fallback_domain,
             "date": _norm_date(raw.get("publishTime") or raw.get("date")),
-        })
+        }
+        # 保留附件/多媒体标志（PDF/图片/视频型通知正文在附件里，用户需知道）
+        if raw.get("attachments"):
+            rec["attachments"] = raw["attachments"]
+        if raw.get("hasVideo") or raw.get("hasAudio"):
+            rec["hasVideo"] = bool(raw.get("hasVideo"))
+            rec["hasAudio"] = bool(raw.get("hasAudio"))
+        records.append(rec)
     return records
 
 
