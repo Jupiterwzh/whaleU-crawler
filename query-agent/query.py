@@ -25,6 +25,10 @@ def load_env():
     # 先加载项目根 .env（集中配置主源），再加载本 Agent 目录 .env（缺失键继承根，有值覆盖根）
     load_dotenv(Path(__file__).resolve().parent.parent / ".env", override=True)
     load_dotenv(Path(__file__).resolve().parent / ".env", override=True)
+    if not os.environ.get("STRATEGIES_DIR"):
+        os.environ["STRATEGIES_DIR"] = str(
+            Path(__file__).resolve().parent.parent / "crawler" / "data" / "strategies"
+        )
     if not os.environ.get("CRAWLER_SCRIPT"):
         os.environ["CRAWLER_SCRIPT"] = str(
             Path(__file__).resolve().parent.parent / "crawler" / "src" / "collectors" / "collector.js"

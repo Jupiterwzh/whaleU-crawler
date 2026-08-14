@@ -242,6 +242,22 @@ class RAGStore:
             })
         return result
 
+    def list_by_domain(self, domain: str, limit: int = 50) -> list[dict]:
+        """列出某 domain 的全部文档（不依赖关键词），按日期降序。"""
+        docs = []
+        for p in self._docs.glob(f"{domain}.*.jsonl"):
+            for line in p.read_text(encoding="utf-8", errors="replace").splitlines():
+                if not line.strip():
+                    continue
+                try:
+                    doc = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if doc.get("domain") == domain:
+                    docs.append(doc)
+        docs.sort(key=lambda d: d.get("date", ""), reverse=True)
+        return docs[:limit]
+
     def _make_snippet(self, content: str, query: str, window: int = 60) -> str:
         """返回 query 首个命中词附近的片段（前后 window 字）。内容短或未命中则返回截断。"""
         content = (content or "").strip()

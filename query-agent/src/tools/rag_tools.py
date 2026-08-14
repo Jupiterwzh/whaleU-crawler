@@ -34,6 +34,16 @@ def _format_search_results(hits: list[dict]) -> str:
     return "\n".join(lines)
 
 
+def _format_list_all(hits: list[dict], domain: str) -> str:
+    """按 domain 列出全部通知（不靠关键词），日期降序。"""
+    if not hits:
+        return f"{domain} 暂无已收录通知"
+    lines = [f"{domain} 共收录 {len(hits)} 条通知："]
+    for i, hit in enumerate(hits, 1):
+        lines.append(f"{i}. [{hit.get('date', '')}] {hit.get('title', '')} ({hit.get('url', '')})")
+    return "\n".join(lines)
+
+
 def _to_ingest_records(jsonl_path: Path, fallback_domain: str) -> list[dict]:
     records = []
     for line in jsonl_path.read_text(encoding="utf-8", errors="replace").splitlines():
@@ -112,7 +122,10 @@ def make_rag_tools(rag_store, crawler_script: str, strategies_dir: str = "") -> 
     """装配 query-agent（分发 Agent）的工具：rag_search / run_crawler / check_strategy / run_explorer。"""
 
     def rag_search(query: str, top_k: int = 5, domain: str = None) -> str:
-        """检索 RAG；可指定 domain 过滤（如查某站点全部通知）。"""
+        """检索 RAG；可指定 domain 过滤（如查某站点全部通知）。query 为空且给 domain 时列出该站全部。"""
+        if not (query or "").strip() and domain:
+            hits = rag_store.list_by_domain(domain, top_k)
+            return _format_list_all(hits, domain)
         return _format_search_results(rag_store.search(query, top_k, domain=domain))
 
     def check_strategy(domain: str) -> str:

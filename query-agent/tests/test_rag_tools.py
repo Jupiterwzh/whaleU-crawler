@@ -167,3 +167,21 @@ def test_rag_search_domain_filter(tmp_path):
     out = tool.handler(query="通知", top_k=10, domain="cs.nju.edu.cn")
     assert "cs.nju.edu.cn" in out
     assert "yzb.nju.edu.cn" not in out
+
+
+def test_rag_search_list_all_by_domain(tmp_path):
+    """rag_search 支持列出某 domain 全部通知（query 可空，不靠关键词）。"""
+    from src.tools.rag_tools import make_rag_tools
+    store = RAGStore(str(tmp_path))
+    store.ingest([
+        {"title": "通知一", "content": "计算机学院通知正文足够长一", "url": "https://cs.nju.edu.cn/1", "domain": "cs.nju.edu.cn", "date": "2026-08-01"},
+        {"title": "通知二", "content": "计算机学院通知正文足够长二", "url": "https://cs.nju.edu.cn/2", "domain": "cs.nju.edu.cn", "date": "2026-08-02"},
+        {"title": "讲座", "content": "学术讲座正文足够长", "url": "https://cs.nju.edu.cn/3", "domain": "cs.nju.edu.cn", "date": "2026-08-03"},
+    ])
+    store.refresh()
+    tools = make_rag_tools(store, "node")
+    tool = [t for t in tools if t.name == "rag_search"][0]
+    out = tool.handler(query="", top_k=50, domain="cs.nju.edu.cn")
+    # 列出 cs 全部（3 条，含不匹配'通知'关键词的'讲座'）
+    assert "通知一" in out and "通知二" in out and "讲座" in out
+    assert "命中 3" in out or "3 条" in out
