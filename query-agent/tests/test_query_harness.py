@@ -181,3 +181,50 @@ def test_list_sites_all_prints_full(tmp_path, monkeypatch, capsys):
     out = capsys.readouterr().out
     assert "全部站点候选" in out
     assert "med.nju.edu.cn" in out, "all=true 时应完整展示候选"
+
+
+def test_check_strategy_none_asks_about_explorer(tmp_path, monkeypatch, capsys):
+    """check_strategy 无策略时提示是否唤起 explorer-agent。"""
+    monkeypatch.chdir(Path(__file__).parent.parent)
+    from src.agent_loop import AgentLoop
+    from src.harness import Harness
+    store = RAGStore(str(tmp_path))
+    h = Harness.from_yaml("agent.yaml", rag_store=store)
+    llm = MagicMock()
+    llm.chat.side_effect = [
+        {"text": "查策略", "tool_calls": [{"name": "check_strategy", "arguments": {"domain": "med.nju.edu.cn"}, "id": "1"}]},
+        {"text": "完成", "tool_calls": None},
+    ]
+    h.tools.get("check_strategy").handler = MagicMock(return_value="策略不存在：med.nju.edu.cn 尚无策略文件")
+    prompts = []
+    inputs = iter(["n", "y", "y"])
+    def fake_input(prompt="", /):
+        prompts.append(prompt)
+        return next(inputs)
+    monkeypatch.setattr("builtins.input", fake_input)
+    loop = AgentLoop(h, llm)
+    loop.run("医学院通知")
+    assert any("唤起 explorer-agent" in p for p in prompts), "无策略时应提示是否唤起 explorer-agent"
+
+
+def test_check_strategy_none_n_skips(tmp_path, monkeypatch):
+    """用户 n → 不唤起 explorer，反馈明确跳过。"""
+    monkeypatch.chdir(Path(__file__).parent.parent)
+    from src.agent_loop import AgentLoop
+    from src.harness import Harness
+    store = RAGStore(str(tmp_path))
+    h = Harness.from_yaml("agent.yaml", rag_store=store)
+    llm = MagicMock()
+    llm.chat.side_effect = [
+        {"text": "查策略", "tool_calls": [{"name": "check_strategy", "arguments": {"domain": "med.nju.edu.cn"}, "id": "1"}]},
+        {"text": "完成", "tool_calls": None},
+    ]
+    h.tools.get("check_strategy").handler = MagicMock(return_value="策略不存在：med.nju.edu.cn 尚无策略文件")
+    inputs = iter(["n", "y", "y"])
+    monkeypatch.setattr("builtins.input", lambda prompt="": next(inputs))
+    loop = AgentLoop(h, llm)
+    loop.run("医学院通知")
+    # 第二轮 LLM 收到的反馈应包含"不唤起"
+    msgs = llm.chat.call_args_list[1][0][0]
+    user_msgs = [m["content"] for m in msgs if m["role"] == "user"]
+    assert any("不唤起" in m for m in user_msgs), "n 应反馈不唤起"

@@ -60,6 +60,15 @@ def _maybe_dispatch_interact(tool_name: str, target: str, result: str) -> str:
             "  输入 exit 退出。\n"
             "  → "
         )
+    elif tool_name == "check_strategy" and "不存在" in result:
+        prompt = (
+            f"\n[分发交互] {target} 尚无爬取策略。\n"
+            "  是否需要唤起 explorer-agent 进行策略分析？（耗时较长，可能数分钟）\n"
+            "  输入 y 唤起策略 Agent；\n"
+            "  如需改目标站，输入新网址（含 http://）或反馈；\n"
+            "  输入 n 或 exit 跳过。\n"
+            "  → "
+        )
     else:
         prompt = (
             f"\n[分发交互] 刚执行了 {tool_name}({target[:60]})\n"
@@ -81,6 +90,9 @@ def _maybe_dispatch_interact(tool_name: str, target: str, result: str) -> str:
         return "exit"
     if action == "new_site":
         return f"用户指定新的目标站点：{payload}。请以此站重新进行站点对照与分发。"
+    # check_strategy 无策略时，用户输入 n → 明确"不唤起 explorer-agent"
+    if tool_name == "check_strategy" and "不存在" in result and ans.strip().lower() in ("n", "no"):
+        return "用户选择不唤起 explorer-agent 进行策略分析。请如实告知用户该站点尚无策略、无法自动爬取，并提示可手动用 explorer-agent（cd explorer-agent && python main.py 探索 站点）生成策略。"
     return f"用户反馈：{payload}"
 
 
