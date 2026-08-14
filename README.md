@@ -174,7 +174,7 @@ cd rag-manager && python rag_manager.py
 
 ```bash
 # 方式 A：从 GitHub Container Registry 拉取（无需本地构建）
-docker pull ghcr.io/Jupiterwzh/whaleU-crawler:latest
+docker pull ghcr.io/jupiterwzh/whaleu-crawler:latest
 
 # 方式 B：从源码构建（需 git clone + docker）
 git clone <仓库地址> && cd <项目>

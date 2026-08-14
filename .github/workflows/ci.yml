@@ -64,7 +64,8 @@ jobs:
         with:
           context: .
           push: true
-          tags: ghcr.io/${{ github.repository }}:latest
+          # Docker tag 必须全小写（ghcr.io 要求小写）
+          tags: ghcr.io/jupiterwzh/whaleu-crawler:latest
           platforms: linux/amd64,linux/arm64
           cache-from: type=gha
           cache-to: type=gha,mode=max
