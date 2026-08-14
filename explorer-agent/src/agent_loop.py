@@ -53,18 +53,18 @@ def _build_marked_tree(nodes: list[dict], selected_urls: set[str]) -> str:
     lines = []
     node_urls = {n.get("url") for n in nodes}
     extra_selected = sorted(selected_urls - node_urls)
-    collapsed = {"detail": 0, "error": 0, "other": 0}
+    collapsed = {"detail": 0, "error": 0, "other": 0, "middle": 0}
     for n in nodes:
         url = n.get("url", "")
         ntype = n.get("type", "")
         if url in selected_urls:
-            # 选中的入口必须展示（即使 detail/error）
+            # 选中的入口必须展示（即使 detail/error/middle）
             depth = n.get("depth", 0)
             indent = "│   " * max(depth - 1, 0) + ("├── " if depth > 0 else "")
             title = n.get("title") or "(无标题)"
             lines.append(f"{indent}[✅选中] {title} ({url})")
             continue
-        if ntype in ("detail", "error", "other"):
+        if ntype in ("detail", "error", "other", "middle"):
             collapsed[ntype] = collapsed.get(ntype, 0) + 1
             continue
         depth = n.get("depth", 0)
@@ -74,8 +74,6 @@ def _build_marked_tree(nodes: list[dict], selected_urls: set[str]) -> str:
             mark = "⚠️未选"
         elif ntype == "info":
             mark = "❌信息栏目"
-        elif ntype == "middle":
-            mark = "中间页"
         elif ntype == "home":
             mark = "首页"
         else:
@@ -89,8 +87,10 @@ def _build_marked_tree(nodes: list[dict], selected_urls: set[str]) -> str:
         folded.append(f"{collapsed['error']} 个抓取失败页")
     if collapsed.get("other"):
         folded.append(f"{collapsed['other']} 个功能页")
+    if collapsed.get("middle"):
+        folded.append(f"{collapsed['middle']} 个中间页（子栏目/成员页等）")
     if folded:
-        lines.append(f"└── [折叠] {'、'.join(folded)}（已折叠，非列表入口）")
+        lines.append(f"└── [折叠] {'、'.join(folded)}（已折叠，非列表入口；展开见完整结构）")
     for url in extra_selected:
         lines.append(f"├── [⚠️不在结构树] (用户指定入口 {url}——不在遍历到的结构中，除非确切知道自己在做什么，否则不要自行添加；若执意要加请直接修改策略 JSON，Agent 制作者不承担任何责任)")
     return "\n".join(lines)

@@ -257,10 +257,11 @@ def test_build_marked_tree_collapses_leaf_noise():
         {"index": 6, "url": "https://cs.nju.edu.cn/rl/people/wangh/index.htm", "title": "王辉", "type": "detail", "depth": 2},
     ]
     tree = _build_marked_tree(nodes, set())
-    # 栏目级节点展示
-    assert "院内公告" in tree and "团队成员" in tree
-    # 具体通知/失败页不逐条列
+    # 栏目级节点展示（list/home）
+    assert "院内公告" in tree
+    # detail/error/middle 叶节点折叠，不逐条列
+    assert "团队成员" not in tree
     assert "c50174a" not in tree
     assert "刘洋" not in tree
     # 折叠汇总说明
-    assert "详情页" in tree and "已折叠" in tree
+    assert "详情页" in tree and "已折叠" in tree and "中间页" in tree
