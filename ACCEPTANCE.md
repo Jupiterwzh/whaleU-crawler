@@ -10,7 +10,7 @@
 ## 前置
 
 - 已 `pip install -r` 三个 Agent 依赖
-- 已配 key：`cd query-agent && python -m src.keys set`（或 `.env`）
+- 已配 key：项目根 `python whale-key.py set`（引导录入，写根 `.env`）或编辑根 `.env`（公共配置集中在根，各 Agent 继承）
 - cs/jw/yzb 已有策略（`crawler/data/strategies/`）
 - query-agent 为分发 Agent（工具：rag_search / run_crawler / check_strategy / run_explorer / read_file）
 
@@ -50,14 +50,19 @@ python rag_manager.py
 
 ```bash
 cd query-agent && python -c "
+import sys; sys.path.insert(0, '..')
 from shared.rag.ragstore import RAGStore
 store = RAGStore('../data/rag'); store.refresh()
-for h in store.search('cs', top_k=20):
+hits = store.search('通知', top_k=20, domain='cs.nju.edu.cn')
+print('cs 来源命中:', len(hits))
+for h in hits[:10]:
     print(h['date'], h.get('valid_until','-'), h['title'], h['url'])
 "
 ```
 
-**预期**：命中 cs 来源多条，每条含 date/valid_until/url/content。
+> 说明：query 词搜正文（如"通知"），`domain='cs.nju.edu.cn'` 过滤来源；不要用 "cs" 作 query（它在 URL 中非独立索引词）。
+>
+> **预期**：命中 cs 来源多条，每条含 date(发布时间)/valid_until(有效期限)/url(原地址)/content(正文含作者)。
 **通过**：字段齐全，可溯源到原 URL。
 
 ## 测试 5：分发 Agent 全链（software 无策略场景）
