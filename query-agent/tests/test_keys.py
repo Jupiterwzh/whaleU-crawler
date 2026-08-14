@@ -86,12 +86,28 @@ def test_cmd_cli_clear_requires_confirmation(monkeypatch, capsys):
     assert "已取消" in out  # 拒绝后取消
 
 
-def test_cmd_cli_clear_confirmed_clears(monkeypatch):
-    """clear 二次确认 y → 执行清除。"""
+def test_cmd_cli_clear_confirmed_clears(monkeypatch, tmp_path):
+    """clear 二次确认 y → 执行清除（keyring + .env 的 LLM_API_KEY 行）。"""
     import src.keys as keys
+    env_path = tmp_path / ".env"
+    env_path.write_text("LLM_BASE_URL=x\nLLM_API_KEY=secret\n", encoding="utf-8")
+    monkeypatch.setattr(keys, "_ROOT_ENV_PATH", env_path)
     monkeypatch.setattr(sys, "argv", ["whale-key.py", "clear"])
     monkeypatch.setattr("builtins.input", lambda prompt="": "y")
-    with patch.object(keys, "keyring") as mock_kr, patch.object(keys, "_env_write_key") as mock_env:
+    with patch.object(keys, "keyring") as mock_kr:
         keys.cmd_cli()
     mock_kr.delete_password.assert_called_once()
-    mock_env.assert_called_once_with("")
+    # .env 的 LLM_API_KEY 行被删除
+    assert "LLM_API_KEY" not in env_path.read_text(encoding="utf-8")
+
+
+def test_env_write_key_empty_does_not_delete(monkeypatch, tmp_path):
+    """_env_write_key('') 不应删除 .env 的 LLM_API_KEY 行（防误删）。"""
+    import src.keys as keys
+    env_path = tmp_path / ".env"
+    env_path.write_text("LLM_BASE_URL=x\nLLM_API_KEY=secret\nLLM_MODEL=m\n", encoding="utf-8")
+    monkeypatch.setattr(keys, "_ROOT_ENV_PATH", env_path)
+    # 空 key 调用 _env_write_key（内部保护：不应删）
+    keys._env_write_key("")
+    content = env_path.read_text(encoding="utf-8")
+    assert "LLM_API_KEY=secret" in content, "空 key 不应删除 .env 的 key 行"

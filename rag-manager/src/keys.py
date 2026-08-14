@@ -41,12 +41,16 @@ def _env_key() -> str:
 
 
 def _env_write_key(key: str):
-    """把 LLM_API_KEY 写进根 .env（集中配置主源，保留其他行）；key 为空则移除该行。"""
+    """把 LLM_API_KEY 写进根 .env（保留其他行）。
+
+    防误删保护：key 为空时不删除 .env 的 LLM_API_KEY 行（避免误调清空真实 key）。
+    """
+    if not key:
+        return
     _ROOT_ENV_PATH.parent.mkdir(parents=True, exist_ok=True)
     lines = _ROOT_ENV_PATH.read_text(encoding="utf-8").splitlines() if _ROOT_ENV_PATH.exists() else []
     new_lines = [l for l in lines if not l.strip().startswith("LLM_API_KEY=")]
-    if key:
-        new_lines.append(f"LLM_API_KEY={key}")
+    new_lines.append(f"LLM_API_KEY={key}")
     _ROOT_ENV_PATH.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
 
 
@@ -75,12 +79,16 @@ def set_key(key: str):
 
 
 def clear_key():
-    """清除 key：keyring 与 .env 都清。"""
+    """清除 key：keyring 与 .env 都清（.env 显式删除 LLM_API_KEY 行，需二次确认）。"""
     try:
         keyring.delete_password(_SERVICE, _ACCOUNT)
     except Exception:
         pass
-    _env_write_key("")
+    # 显式删除 .env 的 LLM_API_KEY 行（不受 _env_write_key 空 key 保护限制）
+    if _ROOT_ENV_PATH.exists():
+        lines = _ROOT_ENV_PATH.read_text(encoding="utf-8").splitlines()
+        new_lines = [l for l in lines if not l.strip().startswith("LLM_API_KEY=")]
+        _ROOT_ENV_PATH.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
 
 
 def has_key() -> bool:
