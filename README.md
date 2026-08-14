@@ -144,6 +144,20 @@ python webui.py 8000
 # 浏览器打开 http://localhost:8000
 ```
 
+### 5. RAG 管理（分配有效时间 + 重建索引）
+
+rag-manager 给通知分配有效时间（过期自动从查询排除）并重建索引。**只处理已入库的待判定文档，不 ingest**。
+
+```bash
+# 推荐：通过查询链自动 ingest + 触发 rag-manager
+cd query-agent && python query.py "cs.nju.edu.cn 最近有什么通知"
+
+# 或：手动处理已入库的 pending（先 ingest 新爬虫产物再跑）
+cd rag-manager && python rag_manager.py
+```
+
+> 详见 `rag-manager/README.md`：工作流程、边界（不删文档、过期靠有效时间排除）、常见问题。
+
 ## 协作模式
 
 - **模式 A（爬虫入口）**：`node collector.js --site <url>` 无策略 → 自动调策略 Agent → 继续爬取。
