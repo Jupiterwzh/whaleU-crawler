@@ -25,6 +25,11 @@
 | 08-12 | B5 冷启动+文档 | brainstorm + cold-start | explore agent + controller | `040c79c`~`<HEAD>` | 冷启动停 8 处 | spec"我以为写清楚"≠文字写清楚 |
 | 08-12 | B6 WebUI 单页表单 | TDD | controller | `webui.py` | 用户选表单式 | 复用 query.answer() 零新依赖 |
 | 08-12 | B7 query 工具子集修复 | TDD + systematic-debugging | controller | 会话九 | 真实验收暴露 fetch_url 误用 | query 入口须隔离 explorer 工具 |
+| 08-13 | B8 经验库（跨站点规律） | brainstorm→spec→plan→TDD | subagent + controller | `380f2d5` `721a6e6` `f09256d` | 经验写入人工确认 | 经验库应聚合通用规律非逐站明细 |
+| 08-13 | B9 网站结构遍历 | TDD | controller | `structure_tools.py` 系列 | 用户定义遍历规则（防循环/外链停止） | BFS+visited+页面分类可确定性返回结构树 |
+| 08-13 | B10 列表分类/关键词/用户选择 | TDD | controller | `fa1239d` `b7d60bb` 等 | 关键词改独立配置、category 仅参考 | 先确认选型再实现避免返工 |
+| 08-13 | B11 外链过滤 + 域名核对 | TDD | controller | `e1d6f4e` `a03fada` | 只过滤公众号外链（小组已实现公众号爬取） | 从 NJU 官网核对 jwb=纪委/xkb=学科建设 |
+| 08-13 | B12 收尾（文档/CI/路径修复） | — | controller | `098140f` `4a47a75` | 大作业收尾 | 硬性项 CI/WebUI/Docker/推送待用户执行 |
 
 ---
 
