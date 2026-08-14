@@ -19,7 +19,7 @@ nju-query.js            查询工具（秒回）
 
 - Puppeteer 默认下载的 Chrome/Chromium 150 在当前 Windows build 10.0.26200.8875 上启动失败，错误码为 2147483651
 - 已安装并验证可用 Chrome for Testing 148.0.7778.97
-- 当前服务器显式使用：`C:\Users\wangzhiheng\.cache\puppeteer\chrome\win64-148.0.7778.97\chrome-win64\chrome.exe`
+- 服务器不再硬编码路径：优先 `CHROME_PATH` 环境变量，未设置则交给 puppeteer 自动查找（`npm install` 下载的 Chrome）；若需用 Chrome for Testing 148，设 `CHROME_PATH=C:\Users\wangzhiheng\.cache\puppeteer\chrome\win64-148.0.7778.97\chrome-win64\chrome.exe`
 - Microsoft Edge 也可用，但当前优先使用已修复的 Chromium/Chrome for Testing 方案
 
 ## 使用方法

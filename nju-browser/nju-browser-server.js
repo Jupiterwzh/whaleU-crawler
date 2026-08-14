@@ -3,21 +3,23 @@ const puppeteer = require('puppeteer');
 const fs = require('fs');
 const path = require('path');
 
-const PORT = parseInt(process.argv.find(a => a.startsWith('--port='))?.split('=')[1] || process.argv[process.argv.indexOf('--port') + 1]) || 4100;
-const CHROME_PATH = 'C:/Users/wangzhiheng/.cache/puppeteer/chrome/win64-148.0.7778.97/chrome-win64/chrome.exe';
+const PORT = parseInt(process.argv.find(a => a.startsWith('--port='))?.split('=')[1] || process.argv[process.argv.indexOf('--port') + 1]) || process.env.PORT || 4100;
+// Chrome 路径：优先环境变量 CHROME_PATH，否则交给 puppeteer 自动查找（npm install 下载的 Chrome）
+const CHROME_PATH = process.env.CHROME_PATH || undefined;
 
 let browser = null;
 let page = null;
 let loggedInStatus = false;
 
 async function launch() {
-  console.log('[BS] Launching browser (Chrome for Testing 148)...');
-  browser = await puppeteer.launch({
+  console.log('[BS] Launching browser (env CHROME_PATH or puppeteer default)...');
+  const launchOpts = {
     headless: false,
-    executablePath: CHROME_PATH,
     defaultViewport: { width: 1280, height: 900 },
     args: ['--no-sandbox', '--disable-setuid-sandbox'],
-  });
+  };
+  if (CHROME_PATH) launchOpts.executablePath = CHROME_PATH;
+  browser = await puppeteer.launch(launchOpts);
   page = await browser.newPage();
   await page.setViewport({ width: 1280, height: 900 });
 
