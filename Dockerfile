@@ -1,7 +1,8 @@
 # Dockerfile — 南京大学通知公告多 Agent 协作系统
 # 构建: docker build -t whalequery .
-# 运行: docker run -v $PWD/query-agent/.env:/app/query-agent/.env \
-#        -e DEEPSEEK_API_KEY=$DEEPSEEK_API_KEY whalequery "计算机学院最近有什么通知"
+# 运行（key 经 .env 挂载传入，不进命令行）:
+#   cd query-agent && python -m src.keys set   # 首次引导录入 key → 写入 .env
+#   docker run --rm -v $PWD/query-agent/.env:/app/query-agent/.env whalequery "问题"
 FROM python:3.11-slim
 
 # Node.js（crawler 是 JS）—— 用官方安装脚本，兼容 slim

@@ -87,6 +87,8 @@ python -m src.keys has    # 是否已配置
 
 > 说明：无桌面环境（WSL/纯 Linux/Docker）下系统钥匙串可能不可用，`set` 会自动降级写入 `.env`。查看 key 状态始终只显示长度，不回显明文。
 >
+> **Docker 分发时**：容器挂载的是 `query-agent/.env`，请在 `query-agent` 目录执行 `python -m src.keys set` 完成首次引导录入（详见「分发（Docker）」章节）。
+>
 > 路径无需手动配置：`STRATEGIES_DIR` / `CRAWLER_SCRIPT` / `RAG_DIR` 等未设置时自动推导到项目内标准位置（见各 Agent `.env.example` 注释），仅非标准布局才需指定。
 
 ### 4. 验证安装
@@ -137,13 +139,27 @@ python webui.py 8000
 ## 分发（Docker）
 
 ```bash
+# 1. 构建镜像（只含代码，不含任何 key）
 docker build -t whalequery .
-docker run -v $PWD/query-agent/.env:/app/query-agent/.env \
-  -e DEEPSEEK_API_KEY=$DEEPSEEK_API_KEY \
+
+# 2. 配置 key（首次引导录入，隐藏输入；写入 query-agent/.env）
+cd query-agent && python -m src.keys set
+
+# 3. 运行（挂载 .env，key 不写入镜像、不进命令行）
+docker run --rm \
+  -v $PWD/query-agent/.env:/app/query-agent/.env \
   whalequery "计算机学院最近有什么通知"
 ```
 
-> 说明：Docker/Linux 下 keyring 可能无系统后端，key 用环境变量传入；钥匙串方案适用于本机（macOS/Win/Linux Desktop）。
+> **key 配置说明（填一次，Docker 复用）**：
+> - 首次用 `python -m src.keys set` 引导录入（隐藏输入），key 写入 `query-agent/.env`（钥匙串不可用时的降级路径，见下）
+> - Docker 容器通过 `-v` 挂载宿主机的 `query-agent/.env`，容器内自动读取 `LLM_API_KEY`，**无需在容器内重复配置**
+> - key 全程不出现在命令行 / shell history，不写入镜像（`.dockerignore` 排除 `.env`）
+> - 这是容器隔离的正确用法：容器不接触宿主机钥匙串，凭据经挂载文件单向传入
+
+> **已知限制（务必阅读）**：
+> - **Docker/Linux 无系统钥匙串后端**：`src.keys set` 在无桌面 Linux/WSL/Docker 下会降级写入 `.env`（明文，gitignore 保护）；有桌面环境（macOS/Win）用系统钥匙串。查看 key 状态只显示长度，不回显明文。
+> - **explorer-agent（策略生成）无法在 Docker 非交互环境使用**：它需要用户在结构遍历后选择入口、确认策略（`_interactive_input` 在无 stdin 时自动确认 y）。Docker 容器默认只运行 **query-agent 问答链路**；需要交互式策略生成的场景请在宿主机直接运行 `python main.py`。
 
 ## 测试与 CI
 

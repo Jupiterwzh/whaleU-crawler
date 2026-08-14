@@ -183,8 +183,8 @@
 ### 分发设计（容器）
 
 - **Docker 容器分发**：`Dockerfile` 构建（python:3.11 + node:18），单条 `docker build` + `docker run`
-- 运行：`docker run -v $PWD/query-agent/.env:/app/query-agent/.env -e DEEPSEEK_API_KEY=$DEEPSEEK_API_KEY whalequery "问题"`
-- README 写清：获取方式、运行命令、key 在目标机配置（`.env` 或环境变量）、已知限制（Docker/Linux 下 keyring 可能无后端，key 用环境变量传入）
+- 运行（key 经 .env 挂载，不进命令行/history）：`cd query-agent && python -m src.keys set` 首次引导录入 → `docker run -v $PWD/query-agent/.env:/app/query-agent/.env whalequery "问题"`
+- README 写清：获取方式、运行命令、key 在目标机配置（`.env` 挂载或环境变量）、已知限制（Docker/Linux 下 keyring 可能无后端，key 经挂载的 `.env` 传入；explorer 交互式策略生成需在宿主机运行）
 - CI：`.github/workflows/ci.yml`（GitHub Actions）+ `.gitlab-ci.yml`，均含 `unit-test` job
 
 ## 8. 技术选型与理由
