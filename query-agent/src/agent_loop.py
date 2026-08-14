@@ -87,13 +87,24 @@ class AgentLoop:
         self._list_all_result: str | None = None  # 缓存的"站点全部通知"完整列表
 
     def _finalize(self, text: str) -> str:
-        """最终答案兜底：'站点全部通知'列表直接以工具完整输出为准（含有效期），Agent 输出作前缀。"""
+        """纯检索列表场景：最终答案 = Agent 输出引言 + 工具完整列表（含有效期），避免 LLM 精简/丢有效期。"""
         if not self._list_all_result:
             return text
-        # 完整列表已含在 Agent 输出中则不重复
-        if self._list_all_result.strip() in text:
-            return text
-        return text + "\n\n【完整通知列表（有效期见各条）】\n" + self._list_all_result
+        # 取 Agent 输出的引言（首行，通常是"已检索到..."类总结），其余列表复述丢弃
+        intro = ""
+        for line in text.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            # 跳过 Agent 可能复述的列表行（含编号/URL/日期开头）
+            if line[:1].isdigit() and ("nju.edu.cn" in line or "通知" in line):
+                continue
+            if line.startswith(("1.", "2.", "**📅", "[20")):
+                continue
+            intro = line
+            break
+        prefix = f"{intro}\n\n" if intro else ""
+        return prefix + self._list_all_result
 
     def run(self, goal: str) -> str:
         H = self.H

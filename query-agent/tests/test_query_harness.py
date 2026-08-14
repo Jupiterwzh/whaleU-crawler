@@ -67,7 +67,7 @@ def test_dispatch_interaction_new_site_injects_feedback(tmp_path, monkeypatch):
 
 
 def test_finalize_appends_full_list(tmp_path, monkeypatch):
-    """Agent 精简列表时，最终答案补全完整通知列表。"""
+    """纯检索列表：最终答案 = Agent 引言 + 完整工具列表（含有效期），不保留 Agent 复述的列表。"""
     from src.agent_loop import AgentLoop
     loop = AgentLoop(MagicMock(), MagicMock())
     loop._list_all_result = (
@@ -76,22 +76,20 @@ def test_finalize_appends_full_list(tmp_path, monkeypatch):
         "2. [2026-08-02] 通知二 (https://cs.nju.edu.cn/2) [有效 60 天]\n"
         "3. [2026-08-03] 通知三 (https://cs.nju.edu.cn/3) [有效 60 天]\n"
     )
-    # Agent 只展示了 1 条
+    # Agent 只复述了 1 条 + 引言
     short = "已检索到 cs.nju.edu.cn 的通知。\n1. 通知一 https://cs.nju.edu.cn/1"
     result = loop._finalize(short)
-    assert "完整通知列表" in result
-    assert "通知二" in result and "通知三" in result
+    assert "已检索到 cs.nju.edu.cn 的通知。" in result  # 引言保留
+    assert "通知二" in result and "通知三" in result    # 完整列表
+    assert "有效 60 天" in result                       # 有效期
+    # Agent 复述的列表行被丢弃（不重复）
+    assert result.count("通知一") == 1
 
 
 def test_finalize_keeps_full_agent_output(tmp_path):
-    """Agent 已完整展示时，不重复追加。"""
+    """无 list_all 缓存时原样返回。"""
     from src.agent_loop import AgentLoop
     loop = AgentLoop(MagicMock(), MagicMock())
-    loop._list_all_result = (
-        "cs.nju.edu.cn 共收录 2 条有效通知：\n"
-        "1. [2026-08-01] 通知一 (https://cs.nju.edu.cn/1) [有效 60 天]\n"
-        "2. [2026-08-02] 通知二 (https://cs.nju.edu.cn/2) [有效 60 天]\n"
-    )
-    full = "cs.nju.edu.cn 共收录 2 条有效通知：\n1. [2026-08-01] 通知一 (https://cs.nju.edu.cn/1) [有效 60 天]\n2. [2026-08-02] 通知二 (https://cs.nju.edu.cn/2) [有效 60 天]"
-    result = loop._finalize(full)
-    assert "完整通知列表" not in result
+    loop._list_all_result = None
+    text = "正常回答内容，不是列表。"
+    assert loop._finalize(text) == text
