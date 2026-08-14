@@ -178,6 +178,8 @@
 | .env 明文暴露 | 说明风险：`.env` 为明文、进程环境可见；生产可用钥匙串/加密文件替代 |
 | 首个用户配置困难 | 首启引导安全录入（隐藏输入），支持查看/更新/清除（不回显） |
 
+**关于安全存储的环境限制**：本项目通过 keyring 实现操作系统钥匙串存储（macOS Keychain / Windows Credential Manager / Linux Secret Service），并支持 getpass 隐藏录入、查看（仅回显长度）、更新、清除。**在无桌面环境（如 WSL、纯 Linux 服务器、Docker）中 keyring 可能没有可用后端**，此时代码自动降级到 `.env` 文件存储（`src/keys.py`），或直接使用环境变量。`.env` 为明文、进程环境可见，属已知风险，已在仓库 `.gitignore` 中排除；生产环境建议使用系统钥匙串或密钥管理服务。查看 key 状态始终只显示长度，不回显明文。
+
 ### 分发设计（容器）
 
 - **Docker 容器分发**：`Dockerfile` 构建（python:3.11 + node:18），单条 `docker build` + `docker run`

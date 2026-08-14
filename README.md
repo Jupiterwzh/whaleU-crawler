@@ -63,20 +63,29 @@ crawler 与 nju-browser 为 Node 原生模块，无第三方依赖（HTTP 模式
 
 ### 3. 配置凭据
 
+配置 key 有两种方式：
+
+**方式 A：`.env` 文件（推荐）**
+
 各 Agent 目录下有 `.env.example`，复制为 `.env` 并填入配置：
 
 ```bash
 cd explorer-agent
 cp .env.example .env
-# 编辑 .env：LLM_API_KEY 用 ${DEEPSEEK_API_KEY} 引用环境变量
+# 编辑 .env：LLM_API_KEY 填入真实 DeepSeek key（或用 ${DEEPSEEK_API_KEY} 引用环境变量）
 ```
 
-key 也可通过系统钥匙串（keyring）安全录入：
+**方式 B：命令行引导录入（隐藏输入）**
 
 ```bash
 cd explorer-agent
-python -m src.keys set    # 引导隐藏录入 key，支持 get/set/clear
+python -m src.keys set    # 隐藏录入 key，存入钥匙串或 .env
+python -m src.keys get    # 查看状态（只显示长度，不回显明文）
+python -m src.keys clear  # 清除 key
+python -m src.keys has    # 是否已配置
 ```
+
+> 说明：无桌面环境（WSL/纯 Linux/Docker）下系统钥匙串可能不可用，`set` 会自动降级写入 `.env`。查看 key 状态始终只显示长度，不回显明文。
 
 ### 4. 验证安装
 
@@ -157,7 +166,8 @@ docker run -v $PWD/query-agent/.env:/app/query-agent/.env \
 
 ## 安全边界
 
-- 凭据：key 走系统钥匙串（`src/keys.py`）或环境变量，`.env` 为明文且被 gitignore，SPEC 安全节有威胁模型
+- 凭据：key 走系统钥匙串（`src/keys.py`，keyring）或环境变量或 `.env`；`.env` 为明文且被 gitignore，SPEC 安全节有威胁模型
+- keyring 环境限制：无桌面环境（WSL/纯 Linux/Docker）可能无钥匙串后端，代码自动降级到 `.env` 或环境变量；查看 key 状态只显示长度，不回显明文
 - 门控：Agent 工具调用经 guardrail 策略（危险操作 deny/ask_user）
 - 注入：用户反馈注入 LLM 时有边界标记，防 prompt 注入
 - 崩溃：strategy/crash 文件原子写，防中断截断
