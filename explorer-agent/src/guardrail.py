@@ -28,6 +28,10 @@ class Guardrail:
             return not self._path_in_dir(path, self.context.get("strategies_dir", ""))
         if scope == "inside_strategies":
             return self._path_in_dir(path, self.context.get("strategies_dir", ""))
+        if scope == "formal_strategy":
+            # 正式策略：在 strategies 目录内，且不以 .draft.json 结尾
+            in_dir = self._path_in_dir(path, self.context.get("strategies_dir", ""))
+            return in_dir and not str(path).endswith(".draft.json")
         if scope == "outside_project":
             return not self._path_in_dir(path, self.context.get("project_root", ""))
         return True

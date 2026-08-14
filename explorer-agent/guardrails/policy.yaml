@@ -11,6 +11,18 @@ rules:
     pattern: "rm "
     action: ask_user
     reason: "删除操作需确认"
+  - tools: ["run_shell"]
+    pattern: "cp "
+    action: deny
+    reason: "禁止用 shell 复制文件（含草稿转正）——策略转正由程序在确认后完成"
+  - tools: ["run_shell"]
+    pattern: "mv "
+    action: deny
+    reason: "禁止用 shell 移动文件（含草稿转正）——策略转正由程序在确认后完成"
+  - tools: ["write_file"]
+    scope: "formal_strategy"
+    action: deny
+    reason: "禁止直接写正式策略文件（草稿转正由程序在用户确认后完成）——请写 <domain>.draft.json 草稿"
   - tools: ["write_file"]
     scope: "inside_strategies"
     action: allow

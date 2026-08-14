@@ -1,8 +1,9 @@
 {
   "meta": {
     "domain": "cs.nju.edu.cn",
-    "siteName": "计算机学院",
-    "strategyVersion": 10,
+    "siteName": "南京大学计算机学院",
+    "cms": "苏迪CMS(webplus)",
+    "strategyVersion": 1,
     "created": "2026-08-03T00:00:00Z",
     "updated": "2026-08-03T00:00:00Z"
   },
@@ -14,8 +15,7 @@
       "paginationType": "listN",
       "paginationHint": "/1702/list{page}.htm",
       "estimatedCount": 84,
-      "totalPages": 6,
-      "pageSize": 14
+      "note": "核心入口：首页右侧『院内公告』栏目，含招生/假期/评优等院内正式通知"
     },
     {
       "name": "研究生公告栏",
@@ -24,8 +24,7 @@
       "paginationType": "listN",
       "paginationHint": "/1703/list{page}.htm",
       "estimatedCount": 22,
-      "totalPages": 2,
-      "pageSize": 14
+      "note": "研究生教学/招生/奖助类公告"
     },
     {
       "name": "本科生公告栏",
@@ -34,8 +33,7 @@
       "paginationType": "listN",
       "paginationHint": "/1704/list{page}.htm",
       "estimatedCount": 31,
-      "totalPages": 3,
-      "pageSize": 14
+      "note": "本科生评奖评优/选拔类公告"
     },
     {
       "name": "获奖公告",
@@ -44,8 +42,16 @@
       "paginationType": "listN",
       "paginationHint": "/1705/list{page}.htm",
       "estimatedCount": 51,
-      "totalPages": 4,
-      "pageSize": 14
+      "note": "获奖/奖教金评选公示类公告"
+    },
+    {
+      "name": "会议讲座信息",
+      "url": "https://cs.nju.edu.cn/1706/list.htm",
+      "type": "news_title",
+      "paginationType": "listN",
+      "paginationHint": "/1706/list{page}.htm",
+      "estimatedCount": 487,
+      "note": "学术报告/讲座通知，量最大"
     },
     {
       "name": "党建通知公告",
@@ -54,19 +60,20 @@
       "paginationType": "listN",
       "paginationHint": "/1712/list{page}.htm",
       "estimatedCount": 21,
-      "totalPages": 2,
-      "pageSize": 14
+      "note": "党的建设栏目下的通知公告"
     }
   ],
   "pagination": {
     "type": "listN",
     "baseUrl": "https://cs.nju.edu.cn/1702/list.htm",
-    "pattern": "/1702/list{page}.htm"
+    "pattern": "/{column}/list{page}.htm"
   },
   "extraction": {
-    "titleMatch": "news_title",
-    "dateMatch": "news_meta",
-    "filterKeywords": ["学院概览", "首页"]
+    "titleMatch": "span.news_title a|.news_title a|div.news_title a",
+    "dateMatch": "span.news_meta|.news_meta",
+    "linkMatch": "span.news_title a|.news_title a",
+    "filterKeywords": ["学院概览", "首页"],
+    "dateFormat": "YYYY-MM-DD"
   },
-  "notes": "苏迪CMS(webplus, siteId=66)。核心入口为最新动态>院内公告/研究生公告栏/本科生公告栏/获奖公告（news_title+news_meta 结构，14条/页，分页 /list{page}.htm）。新增党建>通知公告(1712)。未选：1706会议讲座信息(487条，学术活动预告非通知公告)与1661内容重复；1707就业信息栏为空栏目(No Data)；1660新闻动态为新闻非公告。注意1702列表首条可能为外链(rczp.nju.edu.cn 招聘公告/ mp.weixin.qq.com)，爬取时需区分站内vs外链。"
+  "notes": "苏迪CMS(webplus, siteId=66)。列表页统一结构：ul.news_list>li>span.news_title>a + span.news_meta(YYYY-MM-DD)，分页 /xxx/list{page}.htm（第1页 list.htm，第2页 list2.htm）。已验证 6/6 入口可爬。首页『院内公告』窗口31→/1702，『最新会议讲座信息』窗口13→/1661（与1706同批讲座内容高度重叠，未重复选入）。未选/剔除：1707就业信息栏(空栏目，页面为'<!-- No Data -->')、1660新闻动态(新闻非公告)、1661最新会议讲座信息(与1706重叠)、xshd学生活动(活动非公告)、1654最新动态父栏目(汇总页)。详情页URL形如 /xx/xx/c{column}a{id}/page.htm。注意：部分列表条目为外链(rczp.nju.edu.cn招聘公告、mp.weixin.qq.com公众号)，爬虫需区分站内外链接。"
 }
