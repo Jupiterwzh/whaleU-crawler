@@ -73,3 +73,42 @@ def test_run_shell():
         reg.register(t)
     result = reg.call("run_shell", {"cmd": "echo hello"})
     assert "hello" in result
+
+
+def test_browser_fetch():
+    """browser_fetch 调 nju-browser 服务：navigate + extract。"""
+    from src.tools.web_tools import make_web_tools
+    tools = make_web_tools()
+    reg = ToolRegistry()
+    for t in tools:
+        reg.register(t)
+    calls = []
+    def fake_post(url, **kw):
+        calls.append((url, kw.get("json")))
+        if "/navigate" in url:
+            return MagicMock(status_code=200, json=lambda: {"ok": True})
+        if "/extract" in url:
+            return MagicMock(status_code=200, json=lambda: {
+                "title": "登录后页面", "url": "https://ndwy.nju.edu.cn/x",
+                "text": "登录后可见的通知内容", "links": [{"text": "通知", "href": "https://ndwy.nju.edu.cn/1"}],
+            })
+        return MagicMock(status_code=200, json=lambda: {})
+    with patch("src.tools.web_tools.httpx.post", side_effect=fake_post):
+        result = reg.call("browser_fetch", {"url": "https://ndwy.nju.edu.cn/"})
+    assert "登录后可见的通知内容" in result
+    assert "navigate" in " ".join(u for u, _ in calls)
+    assert "extract" in " ".join(u for u, _ in calls)
+
+
+def test_browser_fetch_service_down():
+    """浏览器服务未启动时返回明确提示。"""
+    from src.tools.web_tools import make_web_tools
+    tools = make_web_tools()
+    reg = ToolRegistry()
+    for t in tools:
+        reg.register(t)
+    def fake_post(url, **kw):
+        raise ConnectionError("refused")
+    with patch("src.tools.web_tools.httpx.post", side_effect=fake_post):
+        result = reg.call("browser_fetch", {"url": "https://ndwy.nju.edu.cn/"})
+    assert "未启动" in result or "失败" in result or "浏览器" in result
