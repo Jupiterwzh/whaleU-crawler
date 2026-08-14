@@ -176,10 +176,20 @@ def run_batch(rag_dir: str = None) -> str:
 
 def main():
     load_env()
-    parser = argparse.ArgumentParser(description="RAG 管理 Agent：分配有效时间并重建索引")
+    parser = argparse.ArgumentParser(description="RAG 管理 Agent：入库爬虫产物、分配有效时间并重建索引")
     parser.add_argument("--domain", help="只处理指定 domain 的文档（预留，当前整批处理）")
     parser.add_argument("--rag-dir", help="RAG 数据目录，默认由环境变量/推导决定")
+    parser.add_argument("--ingest", action="store_true",
+                        help="先入库 crawler/data 的爬虫产物（notices_*.jsonl），再处理有效时间")
+    parser.add_argument("--notices-dir", help="爬虫产物目录（配合 --ingest，默认 crawler/data）")
     args = parser.parse_args()
+    store = RAGStore(args.rag_dir or resolve_rag_dir())
+    if args.ingest:
+        from src.tools.rag_manager_tools import set_rag_store
+        set_rag_store(store)
+        from src.tools.rag_manager_tools import make_rag_manager_tools
+        tool = [t for t in make_rag_manager_tools() if t.name == "ingest_notices"][0]
+        print(tool.handler(notices_dir=args.notices_dir) if args.notices_dir else tool.handler())
     print(run_batch(args.rag_dir))
     # 收录完成后，询问用户是否删除已入库的爬虫产物（notices_*.jsonl）
     try:

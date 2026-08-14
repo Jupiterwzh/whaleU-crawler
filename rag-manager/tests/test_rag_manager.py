@@ -78,3 +78,22 @@ def test_cleanup_notices_not_ingested_keeps(tmp_path, monkeypatch):
     deleted = cleanup_notices(store, notices_dir=str(notices_dir))
     assert f.exists(), "未收录的 notices 不应删除"
     assert deleted == 0
+
+
+def test_ingest_notices_tool(tmp_path, monkeypatch):
+    """ingest_notices 工具：读 notices 产物入库。"""
+    monkeypatch.chdir(Path(__file__).parent.parent)
+    from src.tools.rag_manager_tools import make_rag_manager_tools, set_rag_store
+    store = RAGStore(str(tmp_path / "rag"))
+    set_rag_store(store)
+    # 构造 notices 文件
+    notices_dir = tmp_path / "notices"
+    notices_dir.mkdir()
+    (notices_dir / "notices_test.jsonl").write_text(
+        '{"title":"通知A","content":"这是一段足够长的正文内容用于入库测试验证","url":"https://cs.nju.edu.cn/1","publishTime":"2026-08-01"}\n',
+        encoding="utf-8")
+    tools = make_rag_manager_tools()
+    tool = [t for t in tools if t.name == "ingest_notices"][0]
+    out = tool.handler(notices_dir=str(notices_dir))
+    assert "新增 1" in out
+    assert store._doc_count() == 1

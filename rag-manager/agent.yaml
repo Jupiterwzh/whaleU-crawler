@@ -12,6 +12,9 @@ rules:
 
 tools:
   builtin:
+    - name: "ingest_notices"
+      module: "src.tools.rag_manager_tools"
+      factory: "make_rag_manager_tools"
     - name: "read_rag_docs"
       module: "src.tools.rag_manager_tools"
       factory: "make_rag_manager_tools"

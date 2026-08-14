@@ -57,7 +57,53 @@ def make_rag_manager_tools() -> list[Tool]:
         _store().build_index()
         return "索引已重建（current + archive）"
 
+    def ingest_notices(notices_dir: str = None) -> str:
+        """读取 crawler/data 的爬虫产物（notices_*.jsonl）入库 RAG（内容去重）。"""
+        import json as _json
+        from pathlib import Path
+        from urllib.parse import urlparse
+
+        if not notices_dir:
+            _proj = Path(__file__).resolve().parent.parent.parent.parent
+            notices_dir = str(_proj / "crawler" / "data")
+        ndir = Path(notices_dir)
+        records = []
+        for p in sorted(ndir.glob("notices_*.jsonl"), key=lambda x: x.stat().st_mtime):
+            for line in p.read_text(encoding="utf-8", errors="replace").splitlines():
+                if not line.strip():
+                    continue
+                try:
+                    raw = _json.loads(line)
+                except _json.JSONDecodeError:
+                    continue
+                url = raw.get("url") or ""
+                title = raw.get("title", "")
+                records.append({
+                    "title": title,
+                    "content": raw.get("content") or f"{title} {url}".strip(),
+                    "url": url,
+                    "domain": urlparse(url).netloc if "://" in url else "",
+                    "date": (raw.get("publishTime") or raw.get("date") or "")[:10],
+                })
+        if not records:
+            return f"未找到爬虫产物（{ndir} 下无 notices_*.jsonl）"
+        added = _store().ingest(records)
+        return f"入库 {len(records)} 条记录，新增 {added} 条（其余去重丢弃）"
+
     return [
+        Tool(
+            name="ingest_notices",
+            description="读取 crawler/data 的爬虫产物（notices_*.jsonl）入库 RAG，内容去重。返回新增条数。",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "notices_dir": {"type": "string", "description": "notices 目录，默认 crawler/data"},
+                },
+                "required": [],
+            },
+            handler=ingest_notices,
+            require_approval=False,
+        ),
         Tool(
             name="read_rag_docs",
             description="读取待判定有效时间的 RAG 文档列表（可指定 domain/limit），供分析。",
