@@ -39,8 +39,8 @@ whaleU-crawler/
 ├── REFLECTION.md             # 大作业交付物：反思报告
 ├── Dockerfile / Makefile
 ├── .gitlab-ci.yml            # CI：unit-test job
-├── AGENTS.md / AGENT_LOG.md / README.md / 待办.md
-└── opencode.json
+├── AGENTS.md / AGENT_LOG.md / README.md
+└── SPEC.md / PLAN.md / SPEC_PROCESS.md / REFLECTION.md
 ```
 
 ## 快速开始
