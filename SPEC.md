@@ -181,13 +181,15 @@
 | .env 明文暴露 | 说明风险：`.env` 为明文、进程环境可见；生产可用钥匙串/加密文件替代 |
 | 首个用户配置困难 | 首启引导安全录入（隐藏输入），支持查看/更新/清除（不回显） |
 
-**关于安全存储的环境限制**：本项目通过 keyring 实现操作系统钥匙串存储（macOS Keychain / Windows Credential Manager / Linux Secret Service），并支持 getpass 隐藏录入、查看（仅回显长度）、更新、清除。**在无桌面环境（如 WSL、纯 Linux 服务器、Docker）中 keyring 可能没有可用后端**，此时代码自动降级到 `.env` 文件存储（`src/keys.py`），或直接使用环境变量。`.env` 为明文、进程环境可见，属已知风险，已在仓库 `.gitignore` 中排除；生产环境建议使用系统钥匙串或密钥管理服务。查看 key 状态始终只显示长度，不回显明文。
+**关于安全存储与环境配置**：
+- **根目录集中配置**：公共配置写在项目根 `.env`（LLM key/模型/URL），各 Agent 启动时先加载根 `.env` 再加载自身 `.env`（缺失键继承根，有值覆盖根）。用户改根 `.env` → 未独立配置的 Agent 自动跟随；Agent 显式配置的键保持独立。
+- **keyring 环境限制**：本项目通过 keyring 实现操作系统钥匙串存储（macOS Keychain / Windows Credential Manager / Linux Secret Service），并支持 getpass 隐藏录入、查看（仅回显长度）、更新、清除。**在无桌面环境（如 WSL、纯 Linux 服务器、Docker）中 keyring 可能没有可用后端**，此时代码自动降级到根 `.env` 文件存储（`src/keys.py`，keys CLI 统一写根 `.env`），或直接使用环境变量。`.env` 为明文、进程环境可见，属已知风险，已在仓库 `.gitignore` 中排除；生产环境建议使用系统钥匙串或密钥管理服务。查看 key 状态始终只显示长度，不回显明文。
 
 ### 分发设计（容器）
 
 - **Docker 容器分发**：`Dockerfile` 构建（python:3.11 + node:18），单条 `docker build` + `docker run`
-- 运行（key 经 .env 挂载，不进命令行/history）：`cd query-agent && python -m src.keys set` 首次引导录入 → `docker run -v $PWD/query-agent/.env:/app/query-agent/.env whalequery "问题"`
-- README 写清：获取方式、运行命令、key 在目标机配置（`.env` 挂载或环境变量）、已知限制（Docker/Linux 下 keyring 可能无后端，key 经挂载的 `.env` 传入；explorer 交互式策略生成需在宿主机运行）
+- 运行（key 经根 .env 挂载，不进命令行/history）：`python -m src.keys set`（任一 Agent 目录）首次引导录入 → `docker run -v $PWD/.env:/app/.env whalequery "问题"`
+- README 写清：获取方式、运行命令、key 在目标机配置（根 `.env` 挂载或环境变量）、已知限制（Docker/Linux 下 keyring 可能无后端，key 经挂载的根 `.env` 传入；explorer 交互式策略生成需在宿主机运行）
 - CI：`.github/workflows/ci.yml`（GitHub Actions）+ `.gitlab-ci.yml`，均含 `unit-test` job
 
 ## 8. 技术选型与理由

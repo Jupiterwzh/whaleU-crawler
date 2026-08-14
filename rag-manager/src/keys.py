@@ -12,32 +12,36 @@ import keyring
 
 _SERVICE = "whalequery"
 _ACCOUNT = "cherryin_api_key"
-_ENV_PATH = Path(__file__).resolve().parent.parent / ".env"
+_AGENT_ENV_PATH = Path(__file__).resolve().parent.parent / ".env"
+# 根 .env 为集中配置主源；keys CLI 统一写根，各 Agent 继承
+_ROOT_ENV_PATH = Path(__file__).resolve().parent.parent.parent / ".env"
 
 
 def _env_key() -> str:
     """从 .env 文件读取 LLM_API_KEY（不做 ${} 展开，取字面值）。"""
-    if not _ENV_PATH.exists():
-        return ""
-    try:
-        for line in _ENV_PATH.read_text(encoding="utf-8").splitlines():
-            line = line.strip()
-            if line.startswith("LLM_API_KEY="):
-                val = line.split("=", 1)[1].strip().strip('"').strip("'")
-                return val
-    except OSError:
-        return ""
+    for env_path in (_AGENT_ENV_PATH, _ROOT_ENV_PATH):
+        if not env_path.exists():
+            continue
+        try:
+            for line in env_path.read_text(encoding="utf-8").splitlines():
+                line = line.strip()
+                if line.startswith("LLM_API_KEY="):
+                    val = line.split("=", 1)[1].strip().strip('"').strip("'")
+                    if val:
+                        return val
+        except OSError:
+            continue
     return ""
 
 
 def _env_write_key(key: str):
-    """把 LLM_API_KEY 写进 .env（保留其他行）；key 为空则移除该行。"""
-    _ENV_PATH.parent.mkdir(parents=True, exist_ok=True)
-    lines = _ENV_PATH.read_text(encoding="utf-8").splitlines() if _ENV_PATH.exists() else []
+    """把 LLM_API_KEY 写进根 .env（集中配置主源，保留其他行）；key 为空则移除该行。"""
+    _ROOT_ENV_PATH.parent.mkdir(parents=True, exist_ok=True)
+    lines = _ROOT_ENV_PATH.read_text(encoding="utf-8").splitlines() if _ROOT_ENV_PATH.exists() else []
     new_lines = [l for l in lines if not l.strip().startswith("LLM_API_KEY=")]
     if key:
         new_lines.append(f"LLM_API_KEY={key}")
-    _ENV_PATH.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
+    _ROOT_ENV_PATH.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
 
 
 def get_key() -> str:

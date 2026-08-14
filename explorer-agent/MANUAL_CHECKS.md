@@ -8,21 +8,29 @@
 
 ## 前置：配置环境变量
 
-你需要在终端设置真实环境变量。**main.py 启动时自动加载 .env**（python-dotenv），无需手动 source。
+**本项目用「根目录集中配置」**：公共配置写在项目根 `.env`，本 Agent 启动时自动加载（先根后自身，自身可覆盖）。**无需在本目录单独配 `.env`**（除非要独立于全局）。
 
-### .env 文件格式
-
-`.env` 应包含：
+### 配置方式
 
 ```bash
-LLM_BASE_URL="https://api.deepseek.com/v1"
-LLM_API_KEY=${DEEPSEEK_API_KEY}            # 引用环境变量，或用 python -m src.keys set 引导录入
-LLM_MODEL="deepseek-v4-flash"
-STRATEGIES_DIR="../crawler/data/strategies"
-CRAWLER_SCRIPT="../crawler/src/collectors/collector.js"
-NJU_BROWSER_DIR="../nju-browser"
-# DATA_DIR 可不填，自动从 STRATEGIES_DIR 推导（取上级目录）
+# 项目根目录：复制并填写（LLM key / 模型 / URL）
+cd <项目根>
+cp .env.example .env
+# 编辑 .env：LLM_API_KEY 填真实 DeepSeek key（或用 ${DEEPSEEK_API_KEY} 引用环境变量）
+# 或命令引导录入（隐藏输入，写入根 .env）：
+python -m src.keys set    # 在任一 Agent 目录执行即可
 ```
+
+### 本 Agent 独立配置（可选）
+
+如仅本 Agent 需覆盖全局（例如独立 key），在 `explorer-agent/.env` 写要覆盖的键，例如：
+
+```bash
+# explorer-agent/.env —— 不写的键继承根 .env
+LLM_API_KEY=本Agent独立key
+```
+
+路径无需配置：`STRATEGIES_DIR`/`CRAWLER_SCRIPT` 等留空自动推导到项目内标准位置。
 
 ### 验证环境变量已生效
 

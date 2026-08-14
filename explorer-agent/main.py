@@ -17,6 +17,9 @@ from src.experience import load_experiences, to_context
 
 
 def load_env():
+    # 先加载项目根 .env（集中配置主源），再加载本 Agent 目录 .env（可覆盖根）
+    # load_dotenv 对不存在的文件安全返回，因此根 .env 未配时不影响
+    load_dotenv(Path(__file__).resolve().parent.parent / ".env", override=True)
     load_dotenv(Path(__file__).resolve().parent / ".env", override=True)
     _infer_paths()
 

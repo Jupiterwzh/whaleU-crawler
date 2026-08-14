@@ -35,11 +35,11 @@ def test_prompt_and_store(monkeypatch):
 
 
 def test_env_fallback_when_no_keyring(tmp_path, monkeypatch):
-    """keyring 不可用时降级到 .env 文件。"""
+    """keyring 不可用时降级到根 .env 文件。"""
     import src.keys as keys
     monkeypatch.delenv("LLM_API_KEY", raising=False)
     env_path = tmp_path / ".env"
-    monkeypatch.setattr(keys, "_ENV_PATH", env_path)
+    monkeypatch.setattr(keys, "_ROOT_ENV_PATH", env_path)
     # 模拟 keyring 后端不可用
     with patch.object(keys, "keyring") as mock_kr:
         mock_kr.get_password.side_effect = Exception("no backend")
@@ -53,12 +53,12 @@ def test_env_fallback_when_no_keyring(tmp_path, monkeypatch):
 
 
 def test_env_roundtrip(monkeypatch, tmp_path):
-    """.env 读写往返（保留其他行）。"""
+    """.env 读写往返（保留其他行），key 写根 .env。"""
     import src.keys as keys
     monkeypatch.delenv("LLM_API_KEY", raising=False)
     env_path = tmp_path / ".env"
     env_path.write_text("LLM_BASE_URL=https://api.deepseek.com/v1\nLLM_MODEL=deepseek-v4-flash\n", encoding="utf-8")
-    monkeypatch.setattr(keys, "_ENV_PATH", env_path)
+    monkeypatch.setattr(keys, "_ROOT_ENV_PATH", env_path)
     with patch.object(keys, "keyring") as mock_kr:
         mock_kr.get_password.side_effect = Exception("no backend")
         mock_kr.set_password.side_effect = Exception("no backend")

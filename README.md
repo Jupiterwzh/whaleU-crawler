@@ -61,33 +61,45 @@ pip install -r rag-manager/requirements.txt
 
 crawler 与 nju-browser 为 Node 原生模块，无第三方依赖（HTTP 模式），无需 `npm install`。
 
-### 3. 配置凭据
+### 3. 配置凭据（根目录集中配置）
 
-配置 key 有两种方式：
+**本项目支持「根目录集中配置」**：公共配置写在项目根 `.env`，所有 Agent 自动继承；各 Agent 目录 `.env` 只放"想独立"的键。
 
-**方式 A：`.env` 文件（推荐）**
-
-各 Agent 目录下有 `.env.example`，复制为 `.env` 并填入配置：
+**第 1 步：配置根 `.env`（主配置源，推荐）**
 
 ```bash
-cd explorer-agent
 cp .env.example .env
 # 编辑 .env：LLM_API_KEY 填入真实 DeepSeek key（或用 ${DEEPSEEK_API_KEY} 引用环境变量）
+# 也可用命令引导录入：
+python whale-key.py set    # 隐藏录入，写入项目根 .env
 ```
 
-**方式 B：命令行引导录入（隐藏输入）**
+**第 2 步（可选）：Agent 独立配置**
+
+各 Agent 的 `.env`（`explorer-agent/.env`、`query-agent/.env`、`rag-manager/.env`）只放想独立的键，例如：
 
 ```bash
-cd explorer-agent
-python -m src.keys set    # 隐藏录入 key，存入钥匙串或 .env
-python -m src.keys get    # 查看状态（只显示长度，不回显明文）
-python -m src.keys clear  # 清除 key
-python -m src.keys has    # 是否已配置
+# query-agent/.env —— 给 query-agent 单独指定 key（覆盖根）
+LLM_API_KEY=你的独立key
+```
+
+**继承规则**（关键）：
+- Agent `.env` **没写的键** → 自动继承根 `.env`（改根 → 全局生效）
+- Agent `.env` **写了的键** → 覆盖根（该 Agent 独立）
+- 路径无需配置：`STRATEGIES_DIR`/`CRAWLER_SCRIPT`/`RAG_DIR` 等留空自动推导到项目内标准位置
+
+**方式 B：命令行查看/清除 key（隐藏输入）**
+
+```bash
+python whale-key.py set    # 隐藏录入 key
+python whale-key.py get    # 查看状态（只显示长度，不回显明文）
+python whale-key.py clear  # 清除 key
+python whale-key.py has    # 是否已配置
 ```
 
 > 说明：无桌面环境（WSL/纯 Linux/Docker）下系统钥匙串可能不可用，`set` 会自动降级写入 `.env`。查看 key 状态始终只显示长度，不回显明文。
 >
-> **Docker 分发时**：容器挂载的是 `query-agent/.env`，请在 `query-agent` 目录执行 `python -m src.keys set` 完成首次引导录入（详见「分发（Docker）」章节）。
+> **Docker 分发时**：容器挂载的是 `query-agent/.env`，请将根 `.env` 的关键配置同步到 `query-agent/.env`（或直接用 `cp .env query-agent/.env`），详见「分发（Docker）」章节。
 >
 > 路径无需手动配置：`STRATEGIES_DIR` / `CRAWLER_SCRIPT` / `RAG_DIR` 等未设置时自动推导到项目内标准位置（见各 Agent `.env.example` 注释），仅非标准布局才需指定。
 
@@ -144,23 +156,24 @@ python webui.py 8000
 # 1. 构建镜像（只含代码，不含任何 key）
 docker build -t whalequery .
 
-# 2. 配置 key（首次引导录入，隐藏输入；写入 query-agent/.env）
-cd query-agent && python -m src.keys set
+# 2. 配置 key（首次引导录入，隐藏输入；写入项目根 .env）
+python whale-key.py set    # 根目录执行，key 写根 .env
+#   或手动编辑 .env（根目录集中配置，见「3. 配置凭据」）
 
-# 3. 运行（挂载 .env，key 不写入镜像、不进命令行）
+# 3. 运行（挂载根 .env，key 不写入镜像、不进命令行）
 docker run --rm \
-  -v $PWD/query-agent/.env:/app/query-agent/.env \
+  -v $PWD/.env:/app/.env \
   whalequery "计算机学院最近有什么通知"
 ```
 
 > **key 配置说明（填一次，Docker 复用）**：
-> - 首次用 `python -m src.keys set` 引导录入（隐藏输入），key 写入 `query-agent/.env`（钥匙串不可用时的降级路径，见下）
-> - Docker 容器通过 `-v` 挂载宿主机的 `query-agent/.env`，容器内自动读取 `LLM_API_KEY`，**无需在容器内重复配置**
+> - 首次用 `python whale-key.py set` 引导录入（隐藏输入），key 写入**项目根 `.env`**（钥匙串不可用时的降级路径，见下）
+> - Docker 容器通过 `-v` 挂载宿主机的根 `.env` 到 `/app/.env`，容器内 `load_env` 先读根 `.env`（集中配置），**无需在容器内重复配置**
 > - key 全程不出现在命令行 / shell history，不写入镜像（`.dockerignore` 排除 `.env`）
 > - 这是容器隔离的正确用法：容器不接触宿主机钥匙串，凭据经挂载文件单向传入
 
 > **已知限制（务必阅读）**：
-> - **Docker/Linux 无系统钥匙串后端**：`src.keys set` 在无桌面 Linux/WSL/Docker 下会降级写入 `.env`（明文，gitignore 保护）；有桌面环境（macOS/Win）用系统钥匙串。查看 key 状态只显示长度，不回显明文。
+> - **Docker/Linux 无系统钥匙串后端**：`whale-key.py set` 在无桌面 Linux/WSL/Docker 下会降级写入 `.env`（明文，gitignore 保护）；有桌面环境（macOS/Win）用系统钥匙串。查看 key 状态只显示长度，不回显明文。
 > - **explorer-agent（策略生成）无法在 Docker 非交互环境使用**：它需要用户在结构遍历后选择入口、确认策略（`_interactive_input` 在无 stdin 时自动确认 y）。Docker 容器默认只运行 **query-agent 问答链路**；需要交互式策略生成的场景请在宿主机直接运行 `python main.py`。
 
 ## 测试与 CI
