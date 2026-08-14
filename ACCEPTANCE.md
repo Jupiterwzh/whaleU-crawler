@@ -2,7 +2,7 @@
 
 > 对应作业 §4.8 测试要求 + SPEC §9 验收标准的**真实验收证据**。
 > 这些是需要真实 LLM/网络/交互的手动验收（自动化单元测试见 `make test`）。
-> 关联：`无关文档/测试设计.md`（原始设计）、`explorer-agent/MANUAL_CHECKS.md`（explorer 专项）。
+> 关联：`explorer-agent/MANUAL_CHECKS.md`（explorer 专项验收）。
 > 共 5 条端到端验收（策略 Agent→爬虫→RAG 管理→分发 Agent）。
 
 ---
@@ -96,3 +96,13 @@ python query.py "软件学院最近有什么通知"
 | 3 RAG 管理有效期/去重 | | | |
 | 4 RAG 搜索 cs 全信息 | | | |
 | 5 分发 Agent 全链 | | | |
+
+---
+
+## 附录：需登录站点（SSO）的理论推导
+
+原测试 6/7（需统一身份认证站点 ndwy 的策略生成与爬取）已撤销（时间/登录环境约束），改为理论推导，不纳入本次端到端实测：
+
+- **策略生成**：explorer-agent 的 `crawl_structure`（HTTP）访问需登录页会失败（跳转 `/authserver/`，`type=error/other`），无法遍历登录后内容；需走浏览器模式（SSO 扫码登录后保持会话）。`browser_fetch` 工具（调 nju-browser `/navigate`+`/extract`）已实现可访问登录/JS 渲染页，但**依赖先手动启动 nju-browser-server + 扫码**，未在真实 SSO 站点端到端验证。理论成立但未实测。
+- **爬取**：crawler 的 `--browser` 模式复用浏览器服务登录态可爬登录后通知；HTTP 模式会因跳转 `/authserver/` 抓不到正文。理论成立但未实测。
+- **局限（如实标注）**：需统一身份认证网站的爬取设计**尚不稳定，有概率失败**（依赖扫码登录环境，未端到端实测）；`browser_fetch`/`--browser` 代码已实现但属**已知未验证项**。

@@ -109,7 +109,7 @@
 - **实现要点**：`make test` 跑 3 个 Agent + crawler 全量测试；CI 每次 push 自动跑；Docker 单命令构建/运行；keyring + .env 降级凭据存储。
 - **验证步骤**：`make test` 全绿；`docker build` 成功；`docker run` 端到端（key 生效、RAG 检索）；CI unit-test job pass。
 - Commit：`37d8f9f`、`566dd80`、`a187eeb`。
-- 状态：配置完成；Docker 构建、CI 实跑、逐 Agent 验收均已完成（107 tests 全绿）。
+- 状态：配置完成；Docker 构建、CI 实跑、ghcr 分发、逐 Agent 验收均已完成（191 tests 全绿）。
 
 ### Task B5：大作业过程文档
 
@@ -131,13 +131,14 @@
 
 ## 当前验证状态
 
-- `explorer-agent`：72 tests pass。
-- `query-agent`：26 tests pass。
-- `rag-manager`：3 tests pass。
-- `crawler`：6 Node tests pass。
-- 总计：107 tests pass（含 keys 的 .env 降级 6 个）。
-- 真实 RAG 链路：98 条入库、98 条有效时间处理、query 检索带来源 URL，已通过。
-- 逐 Agent 验收：explorer（yzb 4/4）、query（RAG 命中）、rag-manager（valid_until 提取）、crawler（策略过滤）全部通过。
+- `explorer-agent`：106 tests pass。
+- `query-agent`：55 tests pass。
+- `rag-manager`：21 tests pass。
+- `crawler`：9 Node tests pass。
+- 总计：191 tests pass（含 keys .env 降级、内容去重、agent 提问继续、explorer 草稿即返回等）。
+- 真实 RAG 链路：cs/software/yzb 已入库（RAG 示例数据提交），query 检索带来源 URL + 有效期，已通过。
+- 逐 Agent 验收：explorer（yzb 4/4）、query（RAG 命中 + 分发链）、rag-manager（valid_until 提取 + 去重）、crawler（策略/草稿复用）全部通过。
+- 端到端验收：`ACCEPTANCE.md` 5 条（测试 6/7 SSO 已撤销，改理论推导）。
 
 ## 待用户执行
 

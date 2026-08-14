@@ -36,7 +36,7 @@
 | 站点对照 | `list_sites` 优先读取 `crawler/data/sites.json`（南京大学院系/官方网页清单解析的 112 站点：名称+域名+类别），fallback 到策略 meta；唯一匹配→确认后使用；多个相似候选→列候选询问用户；无对应→询问用户输入/新增站点（用户提供即用，不要求已收录） |
 | 多目标处理 | 用户一次询问多个网站→依次处理（逐站走完整分发链），最后汇总回答（每站分别标注来源） |
 | 交互点 | 关键工具后（list_sites/check_strategy/run_crawler/run_explorer）主动暂停等用户输入：`_maybe_dispatch_interact` 分类输入（continue/exit/new_site/feedback），新站点或反馈注入下一轮修正，遵守 max_adjustments 轮次上限；EOFError（Docker/CI）自动继续不阻塞；用户要求改站点对应时提示 sites.json 绝对路径并警告勿乱改 |
-| 输出 | 自然语言答案（含来源 URL） |
+| 输出 | 自然语言答案（含来源 URL）；**只展示有效期内通知**，每条附有效期（`[有效期至 YYYY-MM-DD]` 或 `[有效 N 天]`）；"某站点所有通知"用 `rag_search(query="", domain=...)` 完整列出 |
 | 边界 | 无法从 RAG 也未能爬取到 → 明确告知"未找到相关信息"；策略 Agent 未生成策略 → 提示用户"可继续用已有 RAG 或手动生成策略" |
 | 错误处理 | 爬虫失败 → 回退到已有 RAG 结果；策略 Agent 唤起失败 → 报告原因；LLM 调用失败 → 重试后报错 |
 
@@ -81,8 +81,8 @@
 |----|------|
 | 输入 | 站点根 URL 或任务文本 |
 | 行为 | BFS 网站结构遍历（`crawl_structure` 工具，确定性返回结构树，节点含编号/锚文本/类型/分类）；页面分类（home/list/middle/detail/info）；防循环、外链停止、深度/链接上限；**truncated（链接超上限）时强制用更大 max_links 重试** |
-| 验证闭环 | 生成草稿后调 `--verify` 实测每入口（isNotificationListPage + 通知数），据报告剔除无效入口；生成后确认界面用**程序生成带标记的完整结构树**（全部节点 + ✅选中/⚠️未选/❌功能页，不依赖 Agent 手画折叠） |
-| 草稿机制 | Agent 写 `<domain>.draft.json` 草稿并验证；用户最终确认（y）后由 postflight 转正为正式策略 `<domain>.json`；未确认前不落盘正式策略 |
+| 验证闭环 | **非交互（`--explore-only`，被分发 Agent spawn）时写草稿即返回，跳过 verify**（防 run_explorer 超时；草稿实际有效性由后续 run_crawler 实测验证）；交互式（宿主机）生成草稿后调 `--verify` 实测每入口。生成后确认界面用**程序生成带标记的完整结构树**（全部节点 + ✅选中/⚠️未选/❌功能页，不依赖 Agent 手画折叠） |
+| 草稿机制 | Agent 写 `<domain>.draft.json` 草稿；非交互（EOFError）下 postflight 自动转正为正式策略 `<domain>.json`；交互式由用户确认后转正；未确认前不落盘正式策略。crawler 无正式策略时会确认草稿并直接使用（免重复探索） |
 | 经验库 | `experiences.json` 跨站点通用规律（CMS 识别/踩坑/部门类型），每次探索注入 goal，探索后人工确认沉淀新规律 |
 | 用户交互 | 确认界面展示程序生成的完整标记结构树；**不接受用户新增不在结构树中的入口**——用户执意要加时，提示其三思后直接修改策略 JSON 文件（本流程不负责该入口有效性） |
 | 输出 | 网站结构树 + 策略 JSON（meta/entries/pagination/extraction/notes） |
