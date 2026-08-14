@@ -25,3 +25,4 @@ tracer:
 paths:
   crawler_script: "${CRAWLER_SCRIPT}"
   rag_dir: "${RAG_DIR}"
+  strategies_dir: "${STRATEGIES_DIR}"

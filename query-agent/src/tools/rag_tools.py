@@ -97,11 +97,41 @@ def _add_rag_manager_path() -> None:
         sys.path.insert(0, str(_RAG_MANAGER_DIR))
 
 
-def make_rag_tools(rag_store, crawler_script: str) -> list[Tool]:
-    """装配 query-agent 的两个工具：rag_search 与 run_crawler。"""
+def make_rag_tools(rag_store, crawler_script: str, strategies_dir: str = "") -> list[Tool]:
+    """装配 query-agent（分发 Agent）的工具：rag_search / run_crawler / check_strategy / run_explorer。"""
 
     def rag_search(query: str, top_k: int = 5) -> str:
         return _format_search_results(rag_store.search(query, top_k))
+
+    def check_strategy(domain: str) -> str:
+        """检查 crawler 策略目录里是否存在该域名的策略 JSON。"""
+        if not strategies_dir:
+            return f"策略目录未配置，无法检查 {domain} 是否存在策略"
+        sdir = Path(strategies_dir)
+        cand = sdir / f"{domain}.json"
+        if cand.is_file():
+            return f"策略存在：{cand}"
+        # 也检查 .draft.json 草稿
+        draft = sdir / f"{domain}.draft.json"
+        if draft.is_file():
+            return f"策略草稿存在（未确认）：{draft}"
+        return f"策略不存在：{domain} 尚无策略文件"
+
+    def run_explorer(url: str, timeout: int = 300) -> str:
+        """唤起 explorer-agent 生成/更新该站点的爬取策略（--explore-only）。"""
+        import subprocess as sp
+        agent_main = Path(__file__).resolve().parent.parent.parent.parent / "explorer-agent" / "main.py"
+        try:
+            proc = sp.run(
+                ["python", str(agent_main), "--explore-only", url],
+                capture_output=True, text=True, timeout=timeout,
+            )
+            tail = (proc.stdout or "").strip()
+            if proc.returncode != 0:
+                return f"策略 Agent 失败（{url}）: 退出码 {proc.returncode}，{(proc.stderr or '').strip()[:300]}"
+            return f"策略 Agent 已为 {url} 运行完毕（exit 0）。输出尾段：\n{tail[-400:]}"
+        except (FileNotFoundError, subprocess.SubprocessError, OSError, ValueError) as e:
+            return f"策略 Agent 唤起失败: {e}"
 
     def run_crawler(url: str, days: int = 30, max_pages: int = 5) -> str:
         try:
@@ -151,6 +181,32 @@ def make_rag_tools(rag_store, crawler_script: str) -> list[Tool]:
                 "required": ["url"],
             },
             handler=run_crawler,
+            require_approval=True,
+        ),
+        Tool(
+            name="check_strategy",
+            description="检查 crawler 策略目录中是否存在指定域名（如 cs.nju.edu.cn）的策略 JSON。返回存在/不存在及路径。",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "domain": {"type": "string", "description": "域名，如 cs.nju.edu.cn"},
+                },
+                "required": ["domain"],
+            },
+            handler=check_strategy,
+            require_approval=False,
+        ),
+        Tool(
+            name="run_explorer",
+            description="唤起策略 Agent（explorer-agent）分析站点结构并生成爬取策略 JSON。用于站点尚无策略时。",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "url": {"type": "string", "description": "站点根 URL，如 https://software.nju.edu.cn/"},
+                },
+                "required": ["url"],
+            },
+            handler=run_explorer,
             require_approval=True,
         ),
     ]

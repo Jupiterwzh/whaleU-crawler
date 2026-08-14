@@ -27,15 +27,15 @@
 
 ## 3. 功能规约
 
-### 3.1 query-agent（查询/编排 Agent）
+### 3.1 query-agent（外层分发/编排 Agent）
 
 | 项 | 内容 |
 |----|------|
 | 输入 | CLI 参数问题文本（`python query.py "问题"`） |
-| 行为 | 复用 harness 主循环；装配工具 `rag_search`/`run_crawler`/`read_file`/`run_shell`；自主决策"先搜→不够→爬→再搜→回答" |
+| 行为 | 复用 harness 主循环；装配工具 `rag_search`/`run_crawler`/`check_strategy`/`run_explorer`/`read_file`；按显式分发链编排：`rag_search` → 不足则 `check_strategy` 查策略 → 无策略则 `run_explorer` 唤起策略 Agent → 有策略则 `run_crawler` 抓取入库 → 再 `rag_search` → 回答 |
 | 输出 | 自然语言答案（含来源 URL） |
-| 边界 | 无法从 RAG 也未能爬取到 → 明确告知"未找到相关信息" |
-| 错误处理 | 爬虫失败 → 回退到已有 RAG 结果；LLM 调用失败 → 重试后报错 |
+| 边界 | 无法从 RAG 也未能爬取到 → 明确告知"未找到相关信息"；策略 Agent 未生成策略 → 提示用户"可继续用已有 RAG 或手动生成策略" |
+| 错误处理 | 爬虫失败 → 回退到已有 RAG 结果；策略 Agent 唤起失败 → 报告原因；LLM 调用失败 → 重试后报错 |
 
 ### 3.2 RAGStore（知识库）
 
@@ -102,25 +102,26 @@
 用户 (CLI query.py / WebUI webui.py)
    │
    ▼
-┌─────────────── query-agent（最外层）──────────────┐
-│  AgentLoop  Guardrail  Tracer                    │
-│  工具: rag_search │ run_crawler │ read_file       │
-└───────┬──────────────┬───────────────┬─────┘
-        │              │               │
-   rag_search     run_crawler      read_file
-        │              │               │
-        ▼              ▼               ▼
-   ┌────────┐    ┌──────────┐    ┌───────────┐
-   │ RAGStore │←─ │ crawler.js│    │ FileStore │
-   │ (docs+   │    │ 按策略爬取  │    │ 策略/备份   │
-   │  index)  │    │ JSONL输出  │    │ /暂存      │
-   └────────┘    └────┬─────┘    └───────────┘
-        ▲ 入库后自动触发 │ 无策略时委托
+ ┌─────────────── query-agent（外层分发 Agent）──────────┐
+ │  AgentLoop  Guardrail  Tracer                          │
+ │  工具: rag_search │ run_crawler │ check_strategy │      │
+ │       run_explorer │ read_file                         │
+ └──────┬─────────────┬──────────────┬────────────┬───┘
+        │             │              │            │
+   rag_search    run_crawler   check_strategy  run_explorer
+        │             │              │            │
+        ▼             ▼              ▼            ▼
+   ┌────────┐    ┌──────────┐    ┌──────────┐   ┌──────────────┐
+   │ RAGStore │←─ │ crawler.js│   │ 策略目录   │→  │ explorer-agent│
+   │ (docs+  │    │ 按策略爬取  │    │ 存在性检查  │   │ 生成/更新策略   │
+   │  index) │    │ JSONL输出  │    └──────────┘   └──────────────┘
+   └────────┘    └────┬─────┘
+        ▲ 入库后自动触发 │ 无策略时兜底委托
         │              ▼
-   ┌──────────────────────┐   ┌───────────────┐
-   │ rag-manager           │   │ explorer-agent │
-   │ 有效时间赋予+索引重建   │   │ 生成/更新策略   │
-   │ 工具: read_rag_docs    │   └───────────────┘
+   ┌──────────────────────┐
+   │ rag-manager           │
+   │ 有效时间赋予+索引重建   │
+   │ 工具: read_rag_docs    │
    │  assign_validity       │
    │  rebuild_index         │
    └──────────────────────┘
@@ -128,11 +129,13 @@
 
 ### 数据流
 
-1. 用户提问 → query-agent 启动 → `RAGStore.is_stale()` → 陈旧则 `refresh()`
+1. 用户提问 → query-agent（分发 Agent）启动 → `RAGStore.is_stale()` → 陈旧则 `refresh()`
 2. Agent 调 `rag_search(query)` → 命中则组织答案（带 URL）返回
-3. 未命中 → 调 `run_crawler(site)` → crawler 输出 JSONL → 入库 RAG
-4. **入库新增 > 0 → 自动触发 rag-manager**：批量判定有效时间 → 写回 valid_from/until → 重建 current 索引（只含仍有效）
-5. 再 `rag_search` → 回答
+3. 未命中 → `check_strategy(domain)` 查策略是否存在
+4. 无策略 → `run_explorer(url)` 唤起 explorer-agent 生成策略（与用户交互确认入口）
+5. 有策略（或策略已生成）→ 调 `run_crawler(site)` → crawler 输出 JSONL → 入库 RAG
+6. **入库新增 > 0 → 自动触发 rag-manager**：批量判定有效时间 → 写回 valid_from/until → 重建 current 索引（只含仍有效）
+7. 再 `rag_search` → 回答
 6. 全过程写入轨迹文件
 
 ### 外部依赖

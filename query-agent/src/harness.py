@@ -61,7 +61,11 @@ class Harness:
 
         # RAG 工具（query-agent 装配，rag_store 可选）
         if rag_store is not None:
-            for tool in make_rag_tools(rag_store, paths.get("crawler_script", "")):
+            for tool in make_rag_tools(
+                rag_store,
+                paths.get("crawler_script", ""),
+                strategies_dir=paths.get("strategies_dir", ""),
+            ):
                 reg.register(tool)
 
         # 门控

@@ -101,7 +101,9 @@ make test    # 3 个 Agent + crawler 全量测试
 
 ## 快速开始
 
-### 1. 查询通知（外层查询 Agent）
+### 1. 查询通知（外层分发 Agent）
+
+query-agent 是分发/编排 Agent：RAG 检索 → 不足则检查策略 → 无策略唤起策略 Agent → 调爬虫入库 → 再检索回答。
 
 ```bash
 cd query-agent
@@ -134,7 +136,7 @@ python webui.py 8000
 
 - **模式 A（爬虫入口）**：`node collector.js --site <url>` 无策略 → 自动调策略 Agent → 继续爬取。
 - **模式 B（策略 Agent 入口）**：`python main.py "探索 X"` → 前导检查 → Agent 生成 → 交互确认 → 后导保存。
-- **模式 C（查询 Agent 入口）**：`cd query-agent && python query.py "问题"` → RAG 检索 → 不够则调爬虫补充入库 → 回答。
+- **模式 C（分发 Agent 入口）**：`cd query-agent && python query.py "问题"` → RAG 检索 → 不足则检查策略 → 无策略唤起策略 Agent → 调爬虫补充入库 → 再检索回答。
 
 ## 分发（Docker）
 

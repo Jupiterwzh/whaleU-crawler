@@ -72,3 +72,36 @@ def test_run_crawler_archives_output(tmp_path, monkeypatch):
     assert arch_dir.exists()
     assert list(arch_dir.glob("notices_*.jsonl"))
     assert not fake_out.exists()
+
+
+def test_check_strategy_finds_and_misses(tmp_path, monkeypatch):
+    """L3: check_strategy 返回策略是否存在及路径。"""
+    from src.tools.rag_tools import make_rag_tools
+    strat_dir = tmp_path / "strategies"
+    strat_dir.mkdir()
+    (strat_dir / "cs.nju.edu.cn.json").write_text('{"meta":{}}', encoding="utf-8")
+    store = MagicMock()
+    tools = make_rag_tools(store, "node", strategies_dir=str(strat_dir))
+    tool = [t for t in tools if t.name == "check_strategy"][0]
+    out_hit = tool.handler(domain="cs.nju.edu.cn")
+    assert "存在" in out_hit and "cs.nju.edu.cn.json" in out_hit
+    out_miss = tool.handler(domain="software.nju.edu.cn")
+    assert "不存在" in out_miss
+
+
+def test_run_explorer_spawns_and_reports(tmp_path, monkeypatch):
+    """L3: run_explorer 唤起 explorer-agent（spawn main.py --explore-only）。"""
+    from src.tools.rag_tools import make_rag_tools
+    store = MagicMock()
+    tools = make_rag_tools(store, "node", strategies_dir=str(tmp_path))
+    tool = [t for t in tools if t.name == "run_explorer"][0]
+    captured = {}
+    def fake_spawn(*a, **kw):
+        captured["cmd"] = a
+        captured["env"] = kw.get("env", {})
+        return MagicMock(stdout="== 策略生成完成 ==\n保存到: x.json", stderr="", returncode=0)
+    monkeypatch.setattr("src.tools.rag_tools.subprocess.run", fake_spawn)
+    out = tool.handler(url="https://software.nju.edu.cn/")
+    assert "software.nju.edu.cn" in out
+    assert "策略" in out
+    assert "--explore-only" in " ".join(captured["cmd"][0])
