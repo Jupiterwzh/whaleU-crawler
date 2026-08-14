@@ -49,20 +49,44 @@ def test_manager_pure_fn_fallback_no_llm(tmp_path, monkeypatch):
 
 
 def test_cleanup_notices_all_ingested_deletes(tmp_path, monkeypatch):
-    """收录完成：notices 全部已入库 → 询问后删除（y）。"""
+    """收录完成：全部已入库的 notices 一次性询问（y 全删 / n 全不删）。"""
     from rag_manager import cleanup_notices
     store = RAGStore(str(tmp_path / "rag"))
-    # 构造 notices 文件（内容已入库）
+    # 构造 2 个 notices 文件（内容已入库）
     notices_dir = tmp_path / "notices"
     notices_dir.mkdir()
-    f = notices_dir / "notices_test.jsonl"
-    f.write_text('{"title":"通知1","content":"正文内容足够长","url":"https://x/1","publishTime":"2026-08-01"}\n', encoding="utf-8")
-    # 先把内容 ingest 进 RAG（dedup 会存在）
-    store.ingest([{"title":"通知1","content":"正文内容足够长","url":"https://x/1","domain":"x","date":"2026-08-01"}])
-    monkeypatch.setattr("builtins.input", lambda prompt="": "y")
+    f1 = notices_dir / "notices_a.jsonl"
+    f1.write_text('{"title":"通知1","content":"正文内容足够长","url":"https://x/1","publishTime":"2026-08-01"}\n', encoding="utf-8")
+    f2 = notices_dir / "notices_b.jsonl"
+    f2.write_text('{"title":"通知2","content":"另一段足够长的正文","url":"https://x/2","publishTime":"2026-08-01"}\n', encoding="utf-8")
+    # 先把内容 ingest 进 RAG
+    store.ingest([
+        {"title": "通知1", "content": "正文内容足够长", "url": "https://x/1", "domain": "x", "date": "2026-08-01"},
+        {"title": "通知2", "content": "另一段足够长的正文", "url": "https://x/2", "domain": "x", "date": "2026-08-01"},
+    ])
+    calls = []
+    monkeypatch.setattr("builtins.input", lambda prompt="": (calls.append(prompt), "y")[1])
     deleted = cleanup_notices(store, notices_dir=str(notices_dir))
-    assert not f.exists(), "已收录的 notices 应被删除"
-    assert deleted == 1
+    assert deleted == 2, "应删除 2 个已收录文件"
+    assert not f1.exists() and not f2.exists()
+    assert len(calls) == 1, "应只询问一次"
+
+
+def test_cleanup_notices_all_ingested_none(tmp_path, monkeypatch):
+    """全部已入库但用户 n → 全不删，只询问一次。"""
+    from rag_manager import cleanup_notices
+    store = RAGStore(str(tmp_path / "rag"))
+    notices_dir = tmp_path / "notices"
+    notices_dir.mkdir()
+    f1 = notices_dir / "notices_a.jsonl"
+    f1.write_text('{"title":"通知1","content":"正文内容足够长","url":"https://x/1","publishTime":"2026-08-01"}\n', encoding="utf-8")
+    store.ingest([{"title": "通知1", "content": "正文内容足够长", "url": "https://x/1", "domain": "x", "date": "2026-08-01"}])
+    calls = []
+    monkeypatch.setattr("builtins.input", lambda prompt="": (calls.append(prompt), "n")[1])
+    deleted = cleanup_notices(store, notices_dir=str(notices_dir))
+    assert deleted == 0
+    assert f1.exists(), "n 应保留全部"
+    assert len(calls) == 1, "应只询问一次"
 
 
 def test_cleanup_notices_not_ingested_keeps(tmp_path, monkeypatch):

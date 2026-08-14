@@ -122,6 +122,8 @@ def cleanup_notices(store: RAGStore, notices_dir: str | None = None) -> int:
 
     ndir = Path(notices_dir)
     deleted = 0
+    # 先收集全部已收录的文件，一次性询问（避免逐文件打扰）
+    eligible = []
     for p in sorted(ndir.glob("notices_*.jsonl")):
         if not p.exists():
             continue
@@ -152,18 +154,22 @@ def cleanup_notices(store: RAGStore, notices_dir: str | None = None) -> int:
             if not store._has_dedup(dedup) and not store._has_dedup(old_dedup):
                 all_ingested = False
                 break
-        if total == 0 or not all_ingested:
-            continue
-        ans = input(f"爬虫产物 {p.name} 已全部收录进 RAG。是否删除该文件？(y/n): ").strip().lower()
-        if ans in ("y", "yes"):
-            try:
-                p.unlink()
-                deleted += 1
-                print(f"  已删除 {p.name}")
-            except OSError:
-                pass
-        else:
-            print(f"  保留 {p.name}")
+        if total > 0 and all_ingested:
+            eligible.append(p)
+    if not eligible:
+        return 0
+    names = "、".join(p.name for p in eligible)
+    ans = input(f"以下 {len(eligible)} 个爬虫产物已全部收录进 RAG：{names}\n是否全部删除？(y=全删/n=全保留): ").strip().lower()
+    if ans not in ("y", "yes"):
+        print("已保留全部爬虫产物")
+        return 0
+    for p in eligible:
+        try:
+            p.unlink()
+            deleted += 1
+        except OSError:
+            pass
+    print(f"已删除 {deleted} 个爬虫产物文件")
     return deleted
 
 

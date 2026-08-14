@@ -51,7 +51,16 @@
 
 ### 触发方式
 
-**方式 A（推荐）：通过 query-agent 分发链自动触发**
+**方式 A（推荐）：入库 + 处理一条命令**
+
+```bash
+cd rag-manager
+python rag_manager.py --ingest
+# 入库 crawler/data 的爬虫产物（notices_*.jsonl，内容去重）
+# → 处理待判定文档（判有效时间）→ 重建索引 → 一次性询问是否删除已收录的爬虫产物
+```
+
+**方式 B：通过 query-agent 分发链自动触发**
 
 ```bash
 cd query-agent
@@ -59,28 +68,30 @@ python query.py "cs.nju.edu.cn 最近有什么通知"
 # run_crawler 自动 ingest 爬虫产物 + 触发 rag-manager 判有效期
 ```
 
-**方式 B：手动处理已入库的 pending**
+**方式 C：只处理已入库的 pending**
 
 ```bash
 cd rag-manager
 python rag_manager.py
-# 处理所有缺有效时间字段的文档 → 重建索引
+# 只处理缺有效时间字段的文档 → 重建索引（不 ingest）
 ```
 
-> ⚠️ `rag_manager.py` **不 ingest**——只处理**已入库**的待判定文档。
-> 若爬虫有新产物，先用 query-agent 链（方式 A）或手动 ingest，再跑 rag-manager。
+> 入库是 rag-manager 的职责：`ingest_notices` 工具 / `--ingest` 命令行选项，读取爬虫产物入库（内容去重）。
 
 ### 参数
 
 ```bash
+python rag_manager.py --ingest          # 先入库爬虫产物，再处理 pending
+python rag_manager.py --ingest --notices-dir <路径>  # 指定爬虫产物目录
 python rag_manager.py --rag-dir <路径>   # 指定 RAG 目录（默认自动推导）
 python rag_manager.py --domain <域名>    # 预留，当前整批处理
 ```
 
 ### 爬虫产物清理
 
-`rag_manager.py` 处理完 pending 后，会扫描 `crawler/data/notices_*.jsonl`：
-- 对**全部记录都已入库**的文件，询问用户"是否删除该爬虫产物文件？"（y 删除 / n 保留）
+`rag_manager.py --ingest` 处理完 pending 后，会扫描 `crawler/data/notices_*.jsonl`：
+- 收集**全部记录都已入库**的文件，**一次性询问**："以下 N 个爬虫产物已全部收录，是否全部删除？(y=全删/n=全保留)"
+- y → 全部删除；n → 全部保留（不逐文件询问）
 - 未全部入库的文件**不询问**（可能有未收录记录，删除会丢数据）
 - 这是"收录完成 → 清理中间产物"的流程，避免 notices 文件堆积
 
