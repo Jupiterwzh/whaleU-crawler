@@ -15,9 +15,9 @@
 `.env` 应包含：
 
 ```bash
-LLM_BASE_URL="https://open.cherryin.cc/v1"
-LLM_API_KEY=${CHERRYIN_API_KEY}          # 引用 WSL 环境变量的真实 key
-LLM_MODEL="deepseek/deepseek-v4-flash(free)"
+LLM_BASE_URL="https://api.deepseek.com/v1"
+LLM_API_KEY=${DEEPSEEK_API_KEY}            # 引用环境变量，或用 python -m src.keys set 引导录入
+LLM_MODEL="deepseek-v4-flash"
 STRATEGIES_DIR="../crawler/data/strategies"
 CRAWLER_SCRIPT="../crawler/src/collectors/collector.js"
 NJU_BROWSER_DIR="../nju-browser"
@@ -193,7 +193,7 @@ grep -rn "/home/wangzhi\|/mnt/c" src/ || echo "src 无硬编码路径"
 
 | 现象 | 排查 |
 |------|------|
-| LLM 调用报错 | 检查 LLM_API_KEY 是否正确、网络能否访问 cherryin.cc |
+| LLM 调用报错 | 检查 LLM_API_KEY 是否正确、网络能否访问 api.deepseek.com |
 | Agent 不停（步数耗尽） | 检查 LLM 是否理解了工具；看轨迹文件定位卡在哪步 |
 | 策略格式不对 | 检查生成的 JSON 是否含 meta/entries/pagination 字段 |
 | 爬虫不认策略 | 确认策略写在 STRATEGIES_DIR 指向的目录 |

@@ -211,6 +211,7 @@
 | 4 | 无 LLM 可确定性测试核心机制 | `make test` 全绿，含 mock LLM 测试 |
 | 5 | 凭据不泄露 | grep 源码无 key；.env 被 gitignore |
 | 6 | 一键安装运行 | 分发命令从零机器可跑通 |
+| 7 | 端到端全链验收 | 按 `ACCEPTANCE.md` 7 条真实验收（策略 Agent→爬虫→RAG 管理→分发 Agent→SSO）全部通过 |
 
 ## 10. 风险与未决问题
 

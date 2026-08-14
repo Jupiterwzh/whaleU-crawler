@@ -171,6 +171,10 @@ docker run --rm \
   - GitLab CI：`.gitlab-ci.yml`，同样定义 `unit-test` job
 - 核心机制（主循环/工具分发/guardrail/RAG）用 mock/stub LLM 做确定性单元测试，无真实 key 也能跑
 
+### 端到端验收
+
+需真实 LLM/网络的端到端验收（策略 Agent→爬虫→RAG 管理→分发 Agent→SSO 共 7 条），见 **`ACCEPTANCE.md`**（含命令、预期、通过判定与结果记录表）。测试 6/7（需登录站点）在 Windows 上执行。
+
 ## 环境变量
 
 | 变量 | 说明 |
