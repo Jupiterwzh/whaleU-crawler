@@ -148,7 +148,7 @@ python webui.py 8000
 
 - **模式 A（爬虫入口）**：`node collector.js --site <url>` 无策略 → 自动调策略 Agent → 继续爬取。
 - **模式 B（策略 Agent 入口）**：`python main.py "探索 X"` → 前导检查 → Agent 生成 → 交互确认 → 后导保存。
-- **模式 C（分发 Agent 入口）**：`cd query-agent && python query.py "问题"` → RAG 检索 → 不足则 `list_sites` 对照候选站点 → 展示目标 URL 请用户确认（可指正）→ 检查策略 → 无策略唤起策略 Agent → 调爬虫补充入库 → 再检索回答。
+- **模式 C（分发 Agent 入口）**：`cd query-agent && python query.py "问题"` → RAG 检索 → 不足则 `list_sites` 对照候选站点（sites.json 112 站）→ 展示目标 URL 请用户确认（可指正/输入新站点/改 sites.json）→ 检查策略 → 无策略唤起策略 Agent → 调爬虫补充入库 → 再检索回答。关键步骤后交互等待用户（y 继续/新网址换目标/反馈修正/exit）。
 
 ## 分发（Docker）
 

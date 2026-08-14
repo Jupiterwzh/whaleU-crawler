@@ -35,6 +35,7 @@
 | 行为 | 复用 harness 主循环；装配工具 `rag_search`/`run_crawler`/`check_strategy`/`run_explorer`/`list_sites`/`read_file`；按显式分发链编排：`rag_search` → 不足则 `list_sites` 对照候选站点（优先 sites.json 112 站点，fallback 策略 meta）→ 展示目标 URL 并请求用户确认（用户可指正对照）→ `check_strategy` 查策略 → 无策略则 `run_explorer` 唤起策略 Agent → 有策略则 `run_crawler` 抓取入库 → 再 `rag_search` → 回答；多目标依次处理 |
 | 站点对照 | `list_sites` 优先读取 `crawler/data/sites.json`（南京大学院系/官方网页清单解析的 112 站点：名称+域名+类别），fallback 到策略 meta；唯一匹配→确认后使用；多个相似候选→列候选询问用户；无对应→询问用户输入/新增站点（用户提供即用，不要求已收录） |
 | 多目标处理 | 用户一次询问多个网站→依次处理（逐站走完整分发链），最后汇总回答（每站分别标注来源） |
+| 交互点 | 关键工具后（list_sites/check_strategy/run_crawler/run_explorer）主动暂停等用户输入：`_maybe_dispatch_interact` 分类输入（continue/exit/new_site/feedback），新站点或反馈注入下一轮修正，遵守 max_adjustments 轮次上限；EOFError（Docker/CI）自动继续不阻塞；用户要求改站点对应时提示 sites.json 绝对路径并警告勿乱改 |
 | 输出 | 自然语言答案（含来源 URL） |
 | 边界 | 无法从 RAG 也未能爬取到 → 明确告知"未找到相关信息"；策略 Agent 未生成策略 → 提示用户"可继续用已有 RAG 或手动生成策略" |
 | 错误处理 | 爬虫失败 → 回退到已有 RAG 结果；策略 Agent 唤起失败 → 报告原因；LLM 调用失败 → 重试后报错 |
