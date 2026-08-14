@@ -798,6 +798,8 @@ data/checkpoints/<domain>.crash.json    特殊暂存 0/1
 ### [AI] 七步工作流偏离说明（如实记录）
 - **关于 using-git-worktrees 与分支策略**：本项目早于课程开始，是在已有 MVP 基础上持续演进，全程单人完成，因此采用单一 `main` 分支持续提交，没有使用多 worktree/PR 隔离。对一个单人、单仓库、持续演进的纯后端项目，单一 main 分支配合完整 commit 历史（每个功能独立提交、含 subagent 与人工修改说明）是合理且自然的；后续若引入多人协作，再启用 worktree/PR 流程。
 - **TDD、brainstorm、writing-plans、subagent-driven、requesting-code-review** 均真实发生（见各会话 commit 与 task 摘要表）。
+- **TDD 执行模式（红→绿→重构，如实说明）**：各功能 task 均**先写失败测试再实现**——摘要表 A1-B13 标注 TDD 的 task，实现前先落测试，测试先红（如 keys 的 .env 降级测试、ragstore 的内容去重测试、agent_loop 的提问继续测试均先写断言后实现），实现后转绿（对应 commit 的"测试全过/xx passed"记录）。**重构环节**在部分 task 真实发生（如 main.py 三段式重构、query.py 抽 answer()、结构树展示重构），但在后期小改动 task 中按"小改动减仪式"（AGENTS.md 规则 22）简化，未逐一记录红→绿→重构三段。整体符合 TDD 精神（测试先行），重构环节覆盖不全属已知简化。
+- **两阶段评审（spec 合规 → 代码质量，如实说明）**：早期 task（A1-A12 / T1-T12）普遍有 subagent 审查记录（"规格✓ 质量✓"、Task9 审查发现 assistant 消息缺 tool_calls 字段、final 全分支审查），体现"先 spec 合规检查、再代码质量检查"的两阶段；后期 B1-B6 及收尾 task 因改动小而按"小改动减仪式"（规则 22）由 controller 手动复核（重跑测试 + diff 检查），未逐一派独立 reviewer。整体：核心 task 两阶段评审真实发生，后期小 task 走简化复核，属已知的覆盖不均。
 - **SPEC 一致性修正**：LLM 供应商（CherryIN→DeepSeek 官方）、分发行（PyPI→Docker）已按真实实现更新 SPEC §5/§7/§8。
 
 ---
