@@ -36,13 +36,10 @@ def load_env():
 
 
 def resolve_rag_dir() -> str:
-    """RAG_DIR 环境变量优先，否则从 STRATEGIES_DIR 父级推导，兜底 ../data/rag。"""
+    """RAG_DIR 环境变量优先，否则用项目根 data/rag（正确位置）。"""
     rag_dir = os.environ.get("RAG_DIR", "")
     if rag_dir:
         return rag_dir
-    strategies_dir = os.environ.get("STRATEGIES_DIR", "")
-    if strategies_dir:
-        return str(Path(strategies_dir).resolve().parent / "rag")
     return str(_PROJ_ROOT / "data" / "rag")
 
 
