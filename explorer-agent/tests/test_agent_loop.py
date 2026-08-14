@@ -116,3 +116,78 @@ def test_preview_fallback_when_no_fence():
     p = _preview(long)
     assert len(p) <= 4100
     assert "截断" in p
+
+
+def test_extract_list_candidates_from_structure_result():
+    """从 crawl_structure 返回提取全部 list 候选（供确认界面展示完整清单）。"""
+    from src.agent_loop import _extract_list_candidates
+    import json
+    tree = {
+        "domain": "cs.nju.edu.cn",
+        "nodes": [
+            {"index": 1, "url": "https://cs.nju.edu.cn/", "type": "home", "title": "首页"},
+            {"index": 2, "url": "https://cs.nju.edu.cn/1650/list.htm", "type": "list", "title": "学院简介"},
+            {"index": 3, "url": "https://cs.nju.edu.cn/1702/list.htm", "type": "list", "title": "院内公告"},
+            {"index": 4, "url": "https://cs.nju.edu.cn/intro.htm", "type": "info", "title": "概览"},
+            {"index": 5, "url": "https://cs.nju.edu.cn/1703/list.htm", "type": "list", "title": "研究生公告栏"},
+        ],
+    }
+    cands = _extract_list_candidates(json.dumps(tree))
+    # 只取 list 类型，保留 index/url/title
+    assert len(cands) == 3
+    assert cands[0]["url"] == "https://cs.nju.edu.cn/1650/list.htm"
+    assert all(c["type"] == "list" for c in cands)
+
+
+def test_extract_list_candidates_non_json():
+    """非 crawl_structure 结果返回空列表。"""
+    from src.agent_loop import _extract_list_candidates
+    assert _extract_list_candidates("普通文本结果") == []
+    assert _extract_list_candidates("") == []
+
+
+def test_format_list_candidates():
+    """完整 list 候选清单格式化（像最初弹窗那样）。"""
+    from src.agent_loop import _format_list_candidates
+    cands = [
+        {"index": 2, "url": "https://cs.nju.edu.cn/1650/list.htm", "title": "学院简介"},
+        {"index": 3, "url": "https://cs.nju.edu.cn/1702/list.htm", "title": "院内公告"},
+    ]
+    out = _format_list_candidates(cands)
+    assert "[ 2]" in out and "学院简介" in out and "1650/list.htm" in out
+    assert "[ 3]" in out and "院内公告" in out
+
+
+def test_format_list_candidates_empty():
+    from src.agent_loop import _format_list_candidates
+    assert _format_list_candidates([]) == ""
+
+
+def test_confirm_preview_includes_all_candidates(tmp_path, monkeypatch):
+    """确认预览包含完整 list 候选清单（不止 Agent 选中的）。"""
+    import os, json
+    monkeypatch.chdir(Path(__file__).parent.parent)
+    from src.agent_loop import AgentLoop
+    from src.harness import Harness
+    h = Harness.from_yaml("agent.yaml")
+    llm = MagicMock()
+    # 第一轮：调 crawl_structure（返回 3 个 list 候选）；第二轮：完成
+    llm.chat.side_effect = [
+        {"text": "先遍历", "tool_calls": [{"name": "crawl_structure", "arguments": {"url": "https://x/"}, "id": "1"}]},
+        {"text": "完成\n\n## 1. 网站结构树\n\n```\n树\n```", "tool_calls": None},
+    ]
+    tree_json = json.dumps({
+        "domain": "x", "nodes": [
+            {"index": 1, "url": "https://x/", "type": "home", "title": "首页"},
+            {"index": 2, "url": "https://x/1702/list.htm", "type": "list", "title": "院内公告"},
+            {"index": 3, "url": "https://x/1650/list.htm", "type": "list", "title": "学院简介"},
+            {"index": 4, "url": "https://x/1703/list.htm", "type": "list", "title": "研究生公告栏"},
+        ]})
+    h.tools.get("crawl_structure").handler = MagicMock(return_value=tree_json)
+    monkeypatch.setattr("builtins.input", lambda prompt="": "y")
+    loop = AgentLoop(h, llm)
+    loop.run("探索")
+    preview = loop._confirm_preview("完成\n\n## 1. 网站结构树\n\n```\n树\n```")
+    assert "1702/list.htm" in preview
+    assert "1650/list.htm" in preview
+    assert "1703/list.htm" in preview

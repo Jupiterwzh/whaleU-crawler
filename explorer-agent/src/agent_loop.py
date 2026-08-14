@@ -9,6 +9,31 @@ from .llm.client import LLMClient
 _PREVIEW_LIMIT = 4000
 
 
+def _extract_list_candidates(result: str) -> list[dict]:
+    """从 crawl_structure 的 JSON 返回中提取全部 list 候选节点。"""
+    if not result or "{" not in result:
+        return []
+    try:
+        data = json.loads(result)
+    except json.JSONDecodeError:
+        return []
+    nodes = data.get("nodes") if isinstance(data, dict) else None
+    if not isinstance(nodes, list):
+        return []
+    return [n for n in nodes if isinstance(n, dict) and n.get("type") == "list"]
+
+
+def _format_list_candidates(cands: list[dict]) -> str:
+    """格式化完整 list 候选清单（编号/标题/URL），供确认界面展示。"""
+    if not cands:
+        return ""
+    lines = ["=== 全部候选列表页入口（供核对 Agent 是否遗漏）==="]
+    for n in cands:
+        title = n.get("title") or "(无标题)"
+        lines.append(f"  [{n.get('index', '?'):>2}] {title[:20]:<22} {n.get('url', '')}")
+    return "\n".join(lines)
+
+
 def _preview(text: str) -> str:
     """确认预览：只展示结构树（第一个围栏代码块），跳过策略 JSON。
 
@@ -68,6 +93,16 @@ class AgentLoop:
         self.H = harness
         self.llm = llm
         self.experience_path = experience_path
+        self._list_candidates: list[dict] = []
+
+    def _confirm_preview(self, text: str) -> str:
+        """确认预览：完整 list 候选清单 + Agent 结构树。"""
+        parts = []
+        cands = _format_list_candidates(self._list_candidates)
+        if cands:
+            parts.append(cands)
+        parts.append(_preview(text))
+        return "\n\n".join(parts)
 
     def run(self, goal: str) -> str:
         H = self.H
@@ -111,7 +146,7 @@ class AgentLoop:
                     print(f"\n=== 第 {round_idx + 1} 轮探索完成 ===\n")
 
                     if round_idx == max_adjustments:
-                        ans = input(f"Agent 输出:\n{_preview(text)}\n\n最终确认? (y=确认/暂存=保存退出/放弃=不保存退出): ")
+                        ans = input(f"Agent 输出:\n{self._confirm_preview(text)}\n\n最终确认? (y=确认/暂存=保存退出/放弃=不保存退出): ")
                         if ans.lower() == "y":
                             _ask_experience_confirm(text, self.experience_path)
                             H.tracer.flush()
@@ -129,7 +164,7 @@ class AgentLoop:
                     if remaining > 0:
                         print(f"（还可调整 {remaining} 次）")
                     print("（输入 暂存=保存当前结果并退出，exit=直接退出）")
-                    ans = input(f"Agent 输出:\n{_preview(text)}\n\n确认? (y/调整建议): ")
+                    ans = input(f"Agent 输出:\n{self._confirm_preview(text)}\n\n确认? (y/调整建议): ")
                     if ans.lower() == "y":
                         _ask_experience_confirm(text, self.experience_path)
                         H.tracer.flush()
@@ -191,6 +226,10 @@ class AgentLoop:
                         result = H.tools.call(tc["name"], tc["arguments"])
                     except Exception as e:
                         result = f"工具失败: {e}"
+                    if tc["name"] == "crawl_structure":
+                        cands = _extract_list_candidates(result)
+                        if cands:
+                            self._list_candidates = cands
                     context.append({"role": "tool", "tool_call_id": tc["id"], "content": result})
                     H.tracer.record(tracer_step, "", action, result)
                     print(f"  结果: {result[:200]}")
