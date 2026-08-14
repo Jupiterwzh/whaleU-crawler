@@ -28,7 +28,9 @@
 
 ---
 
-## 会话记录（完整历史）## 2026-08-03 会话一：项目理解 + 爬虫检查 + Agent 设计
+## 会话记录（完整历史）
+
+## 2026-08-03 会话一：项目理解 + 爬虫检查 + Agent 设计
 
 ### [AI] 项目通读
 - 通读全部文档：README.md、流程参考.md、教程.md、AGENT_REQUIREMENTS.md、notes.md、SPEC.md、AGENTS.md、context-pack.md 等。

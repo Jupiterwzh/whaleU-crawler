@@ -99,9 +99,7 @@ class RagManager:
         from src.tools.rag_manager_tools import set_rag_store
 
         set_rag_store(self.rag_store)
-        return Harness.from_yaml(
-            str(self._agent_dir() / "agent.yaml"), rag_store=self.rag_store
-        )
+        return Harness.from_yaml(str(self._agent_dir() / "agent.yaml"), rag_store=self.rag_store)
 
     @staticmethod
     def _agent_dir() -> Path:

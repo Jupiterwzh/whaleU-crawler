@@ -42,7 +42,7 @@ def answer(question: str, rag_dir: str | None = None) -> str:
     if store.is_stale():
         store.refresh()
 
-    harness = Harness.from_yaml("agent.yaml", rag_store=store)
+    harness = Harness.from_yaml(str(Path(__file__).resolve().parent / "agent.yaml"), rag_store=store)
     llm = LLMClient()
     loop = AgentLoop(harness, llm)
     return loop.run(f"用户问题: {question}\n请先从 RAG 检索，检索不到再考虑调用 run_crawler 补充。")
