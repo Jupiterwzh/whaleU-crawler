@@ -5,6 +5,22 @@
 
 ---
 
+## 交互模式（重要）
+
+**rag-manager 是确定性批处理 Agent，不支持自然语言交互**——它通过命令行参数（`--ingest`/`--dedupe`/`--rag-dir` 等）执行确定性任务，**不启动 LLM Agent 循环**。
+
+三个 Agent 的交互模式对比：
+
+| Agent | 交互模式 | 入口示例 |
+|-------|---------|---------|
+| **explorer-agent** | LLM Agent（自然语言 + 工具编排 + 交互确认） | `python main.py "探索 xxx"` |
+| **query-agent** | LLM Agent（自然语言 + 分发编排） | `python query.py "最近有什么通知"` |
+| **rag-manager** | **确定性批处理**（命令行参数，无自然语言） | `python rag_manager.py --ingest` |
+
+**为什么**：rag-manager 的职责（入库/判有效期/去重/重建索引）是**确定性任务**——有效期判定用纯函数 `judge_validity` 兜底（无 LLM 也能跑），批量处理更可靠，且符合"核心机制无 LLM 可确定性测试"（作业 B.2）。用户**通过 query-agent 分发链间接触发**它（run_crawler 入库后自动触发判有效期）。
+
+---
+
 ## 职责
 
 **只做三件事**：

@@ -137,10 +137,12 @@
 2. Agent 调 `rag_search(query)` → 命中则组织答案（带 URL）返回
 3. 未命中 → `check_strategy(domain)` 查策略是否存在
 4. 无策略 → `run_explorer(url)` 唤起 explorer-agent 生成策略（与用户交互确认入口）
-5. 有策略（或策略已生成）→ 调 `run_crawler(site)` → crawler 输出 JSONL → 入库 RAG
-6. **入库新增 > 0 → 自动触发 rag-manager**：批量判定有效时间 → 写回 valid_from/until → 重建 current 索引（只含仍有效）
-7. 再 `rag_search` → 回答
-6. 全过程写入轨迹文件
+ 5. 有策略（或策略已生成）→ 调 `run_crawler(site)` → crawler 输出 JSONL → 入库 RAG
+ 6. **入库新增 > 0 → 自动触发 rag-manager**：批量判定有效时间 → 写回 valid_from/until → 重建 current 索引（只含仍有效）
+ 7. 再 `rag_search` → 回答
+ 8. 全过程写入轨迹文件
+
+> **Agent 交互模式**：explorer-agent / query-agent 是 LLM Agent（自然语言 + 工具编排 + 交互确认）；**rag-manager 是确定性批处理 Agent**（`--ingest`/`--dedupe` 等命令行参数，不经 LLM），入库/判有效期/去重/重建索引均为确定性任务（纯函数 judge_validity 兜底），由分发链入库后自动触发或手动命令行调用。
 
 ### 外部依赖
 
