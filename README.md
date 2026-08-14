@@ -176,5 +176,22 @@ docker run -v $PWD/query-agent/.env:/app/query-agent/.env \
 
 - **Node.js 18+**（爬虫）
 - **Python 3.11+**（Agent）
-- 爬虫：无外部 npm 依赖
+- 爬虫（crawler）：无外部 npm 依赖
 - Agent：`openai` / `pyyaml` / `httpx` / `pytest` / `python-dotenv` / `keyring`
+- nju-browser：`puppeteer`
+
+## 第三方代码与许可证
+
+本项目遵守所用第三方库的许可证，列表如下：
+
+| 依赖 | 用途 | 许可证 |
+|------|------|--------|
+| [openai](https://pypi.org/project/openai/) | LLM 客户端（DeepSeek 兼容 OpenAI 接口） | Apache-2.0 |
+| [PyYAML](https://pypi.org/project/PyYAML/) | 策略/配置解析 | MIT |
+| [httpx](https://pypi.org/project/httpx/) | HTTP 客户端 | BSD-3-Clause |
+| [pytest](https://pypi.org/project/pytest/) | 测试框架 | MIT |
+| [python-dotenv](https://pypi.org/project/python-dotenv/) | `.env` 加载 | BSD-3-Clause |
+| [keyring](https://pypi.org/project/keyring/) | 系统钥匙串凭据存储 | MIT |
+| [puppeteer](https://github.com/puppeteer/puppeteer) | 浏览器自动化（nju-browser） | Apache-2.0 |
+
+其余代码为项目自研（agent harness、RAG、爬虫、策略生成），无第三方代码引入。

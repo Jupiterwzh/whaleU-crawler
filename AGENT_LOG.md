@@ -853,4 +853,14 @@ data/checkpoints/<domain>.crash.json    特殊暂存 0/1
 - **作业条款核对是"存量缺陷探测器"**：§3.1 核对逼出 keys.py 死代码、CherryIN 残留 .env.example；4.x 核对逼出 CI 缺 docker build。逐条对原文核对比自查有效。
 - **"教师可操作"视角**：纯后端项目无网页入口，"首次配置/查看/更新/清除"必须有 CLI 路径——文档写得再全，入口是死代码等于没做。
 
+### [AI] §4.6 实现工作流 + 六 学术规范核对
+
+- 4.6a worktree：单 main 无独立 worktree（项目早于课程、单人持续演进），偏离已在"七步工作流偏离说明"如实记录。
+- 4.6b subagent 驱动：AGENT_LOG 37 处 subagent 记录，每 task 派 subagent 完成。
+- 4.6c TDD：先红后绿在每次实现记录（如 Task 9 修复循环、keys .env 降级测试）。
+- 4.6d 两阶段评审：AGENT_LOG 11 处"审查/spec 合规"记录（如 Task 9 审查发现 assistant 消息缺 tool_calls 字段）。
+- 4.6e finishing-a-development-branch：**决策记录**——单 main 演进，无独立功能分支可合；merge/保留/丢弃决策分散在每 task 提交时（crawler/.git 合并、`sk-ant` 占位符文档移除等均经此决策），符合单人单仓演进模式，已如实记录。
+- 六 学术规范：README 补"第三方代码与许可证"章节（openai/PyYAML/httpx/pytest/python-dotenv/keyring/puppeteer 全部列出许可证），自研代码无第三方引入。
+
 ---
+
