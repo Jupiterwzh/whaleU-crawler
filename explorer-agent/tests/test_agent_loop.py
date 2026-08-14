@@ -81,3 +81,38 @@ def test_preview_keeps_structure_tree():
     p = _preview(long)
     assert "x" * 4000 in p
     assert "截断" in p
+
+
+def test_preview_keeps_only_structure_tree():
+    """确认预览应只展示结构树（第一个围栏块），跳过策略 JSON。"""
+    from src.agent_loop import _preview
+    text = """验证通过。
+
+## 1. 网站结构树
+
+```
+cs.nju.edu.cn
+├── [✅列表页·选中] 院内公告 (/1702/list.htm)
+└── [❌功能页] 学院简介
+```
+
+## 2. 策略 JSON
+
+```json
+{"meta": {"domain": "cs.nju.edu.cn"}}
+```"""
+    p = _preview(text)
+    assert "cs.nju.edu.cn" in p          # 结构树保留
+    assert "院内公告" in p
+    assert '"meta"' not in p              # 策略 JSON 内容不展示
+    assert "## 2. 策略 JSON" not in p      # JSON 标题段不展示
+    assert "（策略 JSON 已保存，确认时不再展示）" in p  # 提示
+
+
+def test_preview_fallback_when_no_fence():
+    """无围栏代码块时回退到长度截断。"""
+    from src.agent_loop import _preview
+    long = "x" * 6000
+    p = _preview(long)
+    assert len(p) <= 4100
+    assert "截断" in p

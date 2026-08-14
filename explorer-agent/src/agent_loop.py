@@ -10,7 +10,22 @@ _PREVIEW_LIMIT = 4000
 
 
 def _preview(text: str) -> str:
-    """确认预览：保留前 4000 字符（覆盖完整结构树），超长才标注截断。"""
+    """确认预览：只展示结构树（第一个围栏代码块），跳过策略 JSON。
+
+    结构树是用户确认的核心交付物；策略 JSON 与结构树重复且刷屏，
+    已保存到文件，无需在确认时展示。无围栏块时回退到长度截断。
+    """
+    # 找第一个围栏代码块 ``` ... ```
+    start = text.find("```")
+    if start != -1:
+        end = text.find("```", start + 3)
+        if end != -1:
+            tree_block = text[start:end + 3]
+            # 前面加 Agent 的结论摘要（结构树之前的文本，限制在 500 字符内）
+            head = text[:start].strip()
+            if len(head) > 500:
+                head = head[:500] + "..."
+            return (head + "\n\n" + tree_block if head else tree_block) + "\n（策略 JSON 已保存，确认时不再展示）"
     if len(text) <= _PREVIEW_LIMIT:
         return text
     return text[:_PREVIEW_LIMIT] + f"\n...（输出过长已截断，完整内容见最终确认）"
