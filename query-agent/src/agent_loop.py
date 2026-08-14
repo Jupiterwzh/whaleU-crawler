@@ -278,7 +278,12 @@ class AgentLoop:
                         self._explorer_failures = 0
                     context.append({"role": "tool", "tool_call_id": tc["id"], "content": result})
                     H.tracer.record(tracer_step, "", action, result)
-                    print(f"  结果: {result[:2000]}")
+                    # list_sites 结果对用户是噪音（候选清单），只显示条数；其余工具显示结果（截断 2000）
+                    if tc["name"] == "list_sites":
+                        _n = result.count("\n")
+                        print(f"  结果: 已返回 {_n} 条站点候选（供 Agent 对照，不逐条展示）")
+                    else:
+                        print(f"  结果: {result[:2000]}")
 
                     # —— 分发 Agent 专用交互点：关键步骤后暂停等用户 ——
                     interact = _maybe_dispatch_interact(tc["name"], target, result)
